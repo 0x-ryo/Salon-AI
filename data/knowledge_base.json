@@ -1,0 +1,151 @@
+{
+  "salon_info": {
+    "name": "Urban Trim & Groom Barber Salon",
+    "tagline": "Premium Grooming & Styling for Modern Men and Women",
+    "address": "Shop 14, Main Market, Model Town, Jalandhar, Punjab",
+    "contact_phone": "+91 98765 43210",
+    "operating_hours": {
+      "monday": "09:00 - 21:00",
+      "tuesday": "09:00 - 21:00",
+      "wednesday": "09:00 - 21:00",
+      "thursday": "09:00 - 21:00",
+      "friday": "09:00 - 21:00",
+      "saturday": "08:30 - 21:30",
+      "sunday": "08:30 - 21:30"
+    },
+    "policies": {
+      "cancellation_policy": "Free cancellation up to 1 hour before scheduled appointment time.",
+      "walk_in_policy": "Walk-ins are welcome, but pre-booked appointments have priority.",
+      "payment_methods": ["Cash", "UPI (Google Pay, PhonePe, Paytm)", "Credit/Debit Cards"]
+    }
+  },
+  "barbers": [
+    {
+      "id": "B1",
+      "name": "Vikram Singh",
+      "title": "Master Barber & Stylist",
+      "experience_years": 8,
+      "specialties": ["Fade Cuts", "Beard Sculpting", "Classic Scissor Cut"],
+      "rating": 4.9,
+      "working_days": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+    },
+    {
+      "id": "B2",
+      "name": "Rahul Sharma",
+      "title": "Senior Hair Stylist",
+      "experience_years": 5,
+      "specialties": ["Modern Textured Fades", "Hair Spa", "Keratin Treatment"],
+      "rating": 4.8,
+      "working_days": ["Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+    },
+    {
+      "id": "B3",
+      "name": "Amit Verma",
+      "title": "Grooming & Skin Specialist",
+      "experience_years": 4,
+      "specialties": ["Charcoal Facial", "Detan Clean-Up", "Hot Towel Shave"],
+      "rating": 4.7,
+      "working_days": ["Monday", "Tuesday", "Thursday", "Friday", "Saturday", "Sunday"]
+    }
+  ],
+  "services": [
+    {
+      "id": "S1",
+      "category": "Hair",
+      "name": "Classic Gentleman Haircut",
+      "description": "Consultation, precision scissor/clipper haircut, neck cleanup, and light styling.",
+      "duration_minutes": 30,
+      "price_inr": 250
+    },
+    {
+      "id": "S2",
+      "category": "Hair",
+      "name": "Skin Fade / Taper Fade",
+      "description": "Graduated fade using zero guard, foils, and detailed razor edge lineup.",
+      "duration_minutes": 40,
+      "price_inr": 350
+    },
+    {
+      "id": "S3",
+      "category": "Beard",
+      "name": "Royal Beard Trim & Sculpt",
+      "description": "Beard length shaping, hot towel treatment, straight razor cheek lineup, and organic beard oil.",
+      "duration_minutes": 25,
+      "price_inr": 200
+    },
+    {
+      "id": "S4",
+      "category": "Shave",
+      "name": "Traditional Hot Towel Wet Shave",
+      "description": "Pre-shave oil, two hot steam towels, rich lather, single-blade razor shave, and cooling aftershave balm.",
+      "duration_minutes": 25,
+      "price_inr": 180
+    },
+    {
+      "id": "S5",
+      "category": "Combo",
+      "name": "Signature Haircut + Beard Combo",
+      "description": "Complete haircut of your choice + beard sculpting + quick relaxing scalp massage.",
+      "duration_minutes": 55,
+      "price_inr": 450
+    },
+    {
+      "id": "S6",
+      "category": "Skin & Care",
+      "name": "Detan & Charcoal Face Clean-Up",
+      "description": "Deep-cleansing charcoal scrub, steam, blackhead removal, tan removal pack, and hydrating moisturizer.",
+      "duration_minutes": 40,
+      "price_inr": 500
+    },
+    {
+      "id": "S7",
+      "category": "Hair Treatment",
+      "name": "Revitalizing Anti-Dandruff Hair Spa",
+      "description": "Scalp detox cream application, ozonized steam infusion, relaxing massage, and nourishing mask.",
+      "duration_minutes": 45,
+      "price_inr": 650
+    },
+    {
+      "id": "S8",
+      "category": "Coloring",
+      "name": "Beard & Hair Color / Grey Blending",
+      "description": "Ammonia-free organic color application providing natural-looking shade and scalp nourishment.",
+      "duration_minutes": 40,
+      "price_inr": 400
+    }
+  ],
+  "faqs": [
+    {
+      "question": "What are your opening and closing timings?",
+      "answer": "We are open Monday to Friday from 9:00 AM to 9:00 PM, and Saturday to Sunday from 8:30 AM to 9:30 PM."
+    },
+    {
+      "question": "Do I need to book in advance or can I walk in?",
+      "answer": "Walk-ins are always welcome, but we strongly recommend booking in advance through this assistant to skip the queue during peak evening and weekend hours."
+    },
+    {
+      "question": "How much does a haircut cost?",
+      "answer": "Our Classic Gentleman Haircut is ₹250, and our Skin Fade / Taper Fade is ₹350. You can also get the Signature Haircut + Beard Combo for ₹450."
+    },
+    {
+      "question": "Can I choose my favorite barber?",
+      "answer": "Yes! You can choose among our master stylists: Vikram Singh (Fade & Beard Specialist), Rahul Sharma (Modern Styling & Hair Spa), or Amit Verma (Skin & Shave Specialist)."
+    },
+    {
+      "question": "What payment methods do you accept?",
+      "answer": "We accept Cash, all UPI apps (Google Pay, PhonePe, Paytm), and Credit/Debit cards."
+    },
+    {
+      "question": "How do I cancel or reschedule my appointment?",
+      "answer": "You can reschedule or cancel anytime by chatting with this assistant. Just type 'cancel my appointment' or provide your registered phone number. Cancellations are free up to 1 hour before your slot."
+    },
+    {
+      "question": "Is parking available at the salon?",
+      "answer": "Yes, dedicated two-wheeler and four-wheeler parking is available right in front of the salon at Shop 14, Main Market, Model Town."
+    },
+    {
+      "question": "What hygiene and sanitization measures do you follow?",
+      "answer": "All metallic shears and razor heads are sterilized in UV autoclaves between clients. Disposable neck strips, fresh towels, and fresh single-use blades are used for every service."
+    }
+  ]
+}

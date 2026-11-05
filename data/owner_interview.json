@@ -1,0 +1,73 @@
+{
+  "fieldwork_metadata": {
+    "business_name": "Urban Trim & Groom Barber Salon",
+    "business_type": "Men & Unisex Grooming Salon / Barber Shop",
+    "interviewee": "Mr. Rajesh Kumar (Owner & Lead Barber)",
+    "interviewee_experience_years": 14,
+    "interviewer": "Suman Saha (Student ID: 12524973, Group 13)",
+    "interview_date": "2026-11-02",
+    "location": "Shop 14, Main Market, Model Town, Jalandhar",
+    "study_objective": "Capture genuine customer conversation logs, call frequency, pain points, booking behavior, and cancellation patterns to inform chatbot intent modeling."
+  },
+  "business_profile": {
+    "daily_customers_average": 38,
+    "weekend_customers_average": 65,
+    "number_of_styling_chairs": 4,
+    "total_staff": 3,
+    "peak_hours": ["11:00 - 13:00", "17:00 - 20:30"],
+    "common_services": ["Haircut (45%)", "Beard Trim (25%)", "Hair + Beard Combo (18%)", "Facial/Detan (8%)", "Color/Spa (4%)"]
+  },
+  "key_findings_and_pain_points": [
+    {
+      "pain_point_id": "PP-01",
+      "issue": "Interrupted Haircuts from Repetitive Phone Calls",
+      "details": "Barbers have to stop holding clippers/scissors to answer the phone 25-40 times daily. 80% of these calls only ask 'Are you open?', 'How much for haircut?', or 'Is Vikram free right now?'.",
+      "impact": "Slows down service, irritates customer in chair, risks uneven styling cuts."
+    },
+    {
+      "pain_point_id": "PP-02",
+      "issue": "Lost Revenue After Hours (8:30 PM - 9:30 AM)",
+      "details": "Customers often decide to groom late at night or early morning before work. Phone calls go unanswered, causing potential clients to walk into competing shops.",
+      "impact": "Estimated 15-20 missed bookings per week (~₹6,000 - ₹9,000 weekly loss)."
+    },
+    {
+      "pain_point_id": "PP-03",
+      "issue": "Double Bookings and Memory Clashes",
+      "details": "Bookings taken verbally over WhatsApp or phone during a haircut are frequently forgotten or entered incorrectly on a physical paper register.",
+      "impact": "Double booked slots, customer frustration, awkward waiting times."
+    },
+    {
+      "pain_point_id": "PP-04",
+      "issue": "Unregistered Complaints & Unhappy Clients",
+      "details": "If a haircut is cut too short or scalp irritation occurs, customers rarely complain in person; they leave bad Google Reviews instead. There was no quiet complaint capture channel.",
+      "impact": "Loss of repeat customers without knowing root causes."
+    }
+  ],
+  "customer_query_log_sample": [
+    {"query": "bhaiya aaj dukan khuli hai?", "detected_intent": "timing_inquiry", "language": "hinglish"},
+    {"query": "what time do you close tonight?", "detected_intent": "timing_inquiry", "language": "english"},
+    {"query": "fade cut ka kitna lete ho?", "detected_intent": "pricing_inquiry", "language": "hinglish"},
+    {"query": "how much does beard shaping cost?", "detected_intent": "pricing_inquiry", "language": "english"},
+    {"query": "can I book Vikram today at 5pm for haircut and beard?", "detected_intent": "book_appointment", "language": "english"},
+    {"query": "vikram bhai free hai kya 6 baje?", "detected_intent": "availability_inquiry", "language": "hinglish"},
+    {"query": "kal subah 10 baje ka slot mil sakta hai?", "detected_intent": "book_appointment", "language": "hinglish"},
+    {"query": "i need to cancel my booking for 4pm today", "detected_intent": "cancel_appointment", "language": "english"},
+    {"query": "do i need an appointment or can i just walk in?", "detected_intent": "walkin_policy", "language": "english"},
+    {"query": "last time Rahul cut my hair too short, i am unhappy", "detected_intent": "lodge_complaint", "language": "english"},
+    {"query": "do you accept Google Pay or Paytm?", "detected_intent": "payment_inquiry", "language": "english"},
+    {"query": "can you treat severe scalp fungus and alopecia?", "detected_intent": "medical_out_of_scope", "language": "english"}
+  ],
+  "owner_expected_system_outcomes": {
+    "must_haves": [
+      "Must take appointments into a calendar without requiring owner intervention.",
+      "Must clearly show prices so clients don't argue at the counter.",
+      "Must allow client to pick their preferred barber.",
+      "Must allow human escalation when a customer is angry or asks something custom."
+    ],
+    "owner_review_feedback": {
+      "rating": 4.8,
+      "verdict": "If the chatbot can run on Telegram and our counter tablet, it solves our biggest daily headache of stopping haircuts to answer basic questions.",
+      "signed_off": true
+    }
+  }
+}
