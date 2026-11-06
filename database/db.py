@@ -1,0 +1,422 @@
+"""
+Database Management Module for Urban Trim & Groom Barber Salon.
+Handles SQLite relational storage for services, barbers, appointments,
+complaints, human handovers, and conversation audit logs.
+"""
+
+import sqlite3
+import json
+import os
+from datetime import datetime, timedelta
+
+DB_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(DB_DIR)
+DB_PATH = os.path.join(DB_DIR, "salon.db")
+KB_PATH = os.path.join(PROJECT_ROOT, "data", "knowledge_base.json")
+
+
+def get_connection():
+    """Returns a SQLite database connection with row factory enabled."""
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+def init_db():
+    """Initializes tables and seeds initial data from knowledge_base.json."""
+    os.makedirs(DB_DIR, exist_ok=True)
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # 1. Services Table
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS services (
+        id TEXT PRIMARY KEY,
+        category TEXT NOT NULL,
+        name TEXT NOT NULL,
+        description TEXT,
+        duration_minutes INTEGER NOT NULL,
+        price_inr REAL NOT NULL
+    )
+    """)
+
+    # 2. Barbers Table
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS barbers (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        title TEXT NOT NULL,
+        experience_years INTEGER NOT NULL,
+        specialties TEXT NOT NULL,
+        rating REAL NOT NULL,
+        working_days TEXT NOT NULL
+    )
+    """)
+
+    # 3. Appointments Table
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS appointments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        customer_name TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        service_id TEXT NOT NULL,
+        service_name TEXT NOT NULL,
+        barber_id TEXT NOT NULL,
+        barber_name TEXT NOT NULL,
+        appointment_date TEXT NOT NULL,
+        start_time TEXT NOT NULL,
+        end_time TEXT NOT NULL,
+        price_inr REAL NOT NULL,
+        status TEXT DEFAULT 'BOOKED',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (service_id) REFERENCES services (id),
+        FOREIGN KEY (barber_id) REFERENCES barbers (id)
+    )
+    """)
+
+    # 4. Complaints Table
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS complaints (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        customer_name TEXT,
+        phone TEXT NOT NULL,
+        complaint_text TEXT NOT NULL,
+        severity TEXT DEFAULT 'MEDIUM',
+        status TEXT DEFAULT 'OPEN',
+        resolution_notes TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    # 5. Human Handover Queue Table
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS handover_queue (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        customer_phone TEXT,
+        last_query TEXT NOT NULL,
+        reason TEXT NOT NULL,
+        status TEXT DEFAULT 'PENDING',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    # 6. Audit & Analytics Logs Table
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS chat_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        session_id TEXT,
+        user_message TEXT NOT NULL,
+        bot_response TEXT NOT NULL,
+        detected_intent TEXT,
+        confidence REAL,
+        engine_used TEXT,
+        latency_ms REAL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    conn.commit()
+
+    # Seed data from knowledge_base.json if services table is empty
+    cursor.execute("SELECT COUNT(*) as count FROM services")
+    if cursor.fetchone()["count"] == 0 and os.path.exists(KB_PATH):
+        with open(KB_PATH, "r", encoding="utf-8") as f:
+            kb = json.load(f)
+
+        for s in kb.get("services", []):
+            cursor.execute("""
+            INSERT INTO services (id, category, name, description, duration_minutes, price_inr)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """, (s["id"], s["category"], s["name"], s["description"], s["duration_minutes"], s["price_inr"]))
+
+        for b in kb.get("barbers", []):
+            cursor.execute("""
+            INSERT INTO barbers (id, name, title, experience_years, specialties, rating, working_days)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (b["id"], b["name"], b["title"], b["experience_years"], json.dumps(b["specialties"]), b["rating"], json.dumps(b["working_days"])))
+
+        # Seed sample upcoming appointments
+        today_str = datetime.now().strftime("%Y-%m-%d")
+        cursor.execute("""
+        INSERT INTO appointments (customer_name, phone, service_id, service_name, barber_id, barber_name, appointment_date, start_time, end_time, price_inr, status)
+        VALUES 
+        ('Amitabh Sen', '9876500001', 'S1', 'Classic Gentleman Haircut', 'B1', 'Vikram Singh', ?, '10:00', '10:30', 250, 'BOOKED'),
+        ('Rohit Mehra', '9876500002', 'S3', 'Royal Beard Trim & Sculpt', 'B2', 'Rahul Sharma', ?, '14:00', '14:25', 200, 'BOOKED')
+        """, (today_str, today_str))
+
+        conn.commit()
+
+    conn.close()
+
+
+def get_all_services():
+    """Fetch all services sorted by category and price."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM services ORDER BY category, price_inr")
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def get_service_by_name_or_id(identifier):
+    """Find a service by ID or fuzzy name match."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+    SELECT * FROM services 
+    WHERE id = ? OR LOWER(name) LIKE ?
+    LIMIT 1
+    """, (identifier, f"%{identifier.lower()}%"))
+    row = cursor.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def get_all_barbers():
+    """Fetch all active barbers."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM barbers")
+    rows = cursor.fetchall()
+    conn.close()
+    result = []
+    for r in rows:
+        b = dict(r)
+        b["specialties"] = json.loads(b["specialties"])
+        b["working_days"] = json.loads(b["working_days"])
+        result.append(b)
+    return result
+
+
+def get_barber_by_name_or_id(identifier):
+    """Find a barber by ID or partial name."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+    SELECT * FROM barbers 
+    WHERE id = ? OR LOWER(name) LIKE ?
+    LIMIT 1
+    """, (identifier, f"%{identifier.lower()}%"))
+    row = cursor.fetchone()
+    conn.close()
+    if row:
+        b = dict(row)
+        b["specialties"] = json.loads(b["specialties"])
+        b["working_days"] = json.loads(b["working_days"])
+        return b
+    return None
+
+
+def get_available_slots(barber_id, date_str):
+    """
+    Computes available 30-minute time slots between 09:00 and 20:30 for a given barber on a given date.
+    Eliminates slots that conflict with existing active bookings.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # Check existing bookings for this barber on this date
+    cursor.execute("""
+    SELECT start_time, end_time FROM appointments
+    WHERE barber_id = ? AND appointment_date = ? AND status = 'BOOKED'
+    """, (barber_id, date_str))
+    booked_slots = cursor.fetchall()
+    conn.close()
+
+    booked_times = {b["start_time"] for b in booked_slots}
+
+    # Generate all candidate slots between 09:00 and 20:30
+    candidate_slots = [
+        "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
+        "12:00", "12:30", "13:00", "14:00", "14:30", "15:00",
+        "15:30", "16:00", "16:30", "17:00", "17:30", "18:00",
+        "18:30", "19:00", "19:30", "20:00"
+    ]
+
+    available = [slot for slot in candidate_slots if slot not in booked_times]
+    return available
+
+
+def book_appointment(customer_name, phone, service_id, barber_id, date_str, time_str):
+    """
+    Creates a new appointment with conflict detection.
+    Returns (success: bool, message: str, appointment_id: int or None)
+    """
+    service = get_service_by_name_or_id(service_id)
+    barber = get_barber_by_name_or_id(barber_id)
+
+    if not service:
+        return False, f"Service '{service_id}' could not be found.", None
+    if not barber:
+        return False, f"Barber '{barber_id}' could not be found.", None
+
+    # Calculate end time
+    try:
+        start_dt = datetime.strptime(time_str, "%H:%M")
+        end_dt = start_dt + timedelta(minutes=service["duration_minutes"])
+        end_time_str = end_dt.strftime("%H:%M")
+    except ValueError:
+        return False, "Invalid time format. Please provide HH:MM in 24-hr format.", None
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # Conflict check
+    cursor.execute("""
+    SELECT id FROM appointments
+    WHERE barber_id = ? AND appointment_date = ? AND start_time = ? AND status = 'BOOKED'
+    """, (barber["id"], date_str, time_str))
+    existing = cursor.fetchone()
+
+    if existing:
+        conn.close()
+        return False, f"Sorry, {barber['name']} is already booked at {time_str} on {date_str}.", None
+
+    cursor.execute("""
+    INSERT INTO appointments (customer_name, phone, service_id, service_name, barber_id, barber_name, appointment_date, start_time, end_time, price_inr, status)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'BOOKED')
+    """, (customer_name, phone, service["id"], service["name"], barber["id"], barber["name"], date_str, time_str, end_time_str, service["price_inr"]))
+
+    appointment_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+
+    return True, f"Appointment #{appointment_id} confirmed for {customer_name} with {barber['name']} on {date_str} at {time_str} ({service['name']} - ₹{int(service['price_inr'])}).", appointment_id
+
+
+def cancel_appointment_by_phone(phone):
+    """Cancels the most recent booked appointment for a phone number."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+    SELECT id, service_name, appointment_date, start_time, barber_name FROM appointments
+    WHERE phone = ? AND status = 'BOOKED'
+    ORDER BY appointment_date DESC, start_time DESC
+    LIMIT 1
+    """, (phone,))
+    row = cursor.fetchone()
+
+    if not row:
+        conn.close()
+        return False, f"No active bookings found for phone number ending in {phone[-4:]}."
+
+    cursor.execute("UPDATE appointments SET status = 'CANCELLED' WHERE id = ?", (row["id"],))
+    conn.commit()
+    conn.close()
+    return True, f"Appointment #{row['id']} for {row['service_name']} with {row['barber_name']} on {row['appointment_date']} at {row['start_time']} has been successfully cancelled."
+
+
+def get_appointments_by_phone(phone):
+    """Finds all bookings (past & present) for a customer phone number."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+    SELECT * FROM appointments WHERE phone = ? ORDER BY appointment_date DESC, start_time DESC
+    """, (phone,))
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def get_all_appointments(date_filter=None):
+    """Fetches appointments for manager dashboard."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    if date_filter:
+        cursor.execute("SELECT * FROM appointments WHERE appointment_date = ? ORDER BY start_time ASC", (date_filter,))
+    else:
+        cursor.execute("SELECT * FROM appointments ORDER BY appointment_date DESC, start_time ASC")
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def log_complaint(customer_name, phone, complaint_text, severity="MEDIUM"):
+    """Logs customer feedback or grievance into complaints table."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+    INSERT INTO complaints (customer_name, phone, complaint_text, severity, status)
+    VALUES (?, ?, ?, ?, 'OPEN')
+    """, (customer_name, phone, complaint_text, severity))
+    complaint_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return complaint_id
+
+
+def get_all_complaints():
+    """Fetches all customer complaints for manager portal."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM complaints ORDER BY created_at DESC")
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def resolve_complaint(complaint_id, notes):
+    """Updates complaint resolution status."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+    UPDATE complaints SET status = 'RESOLVED', resolution_notes = ? WHERE id = ?
+    """, (notes, complaint_id))
+    conn.commit()
+    conn.close()
+
+
+def add_to_handover_queue(customer_phone, last_query, reason="Unresolved or complex inquiry"):
+    """Adds a customer to the human staff escalation queue."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+    INSERT INTO handover_queue (customer_phone, last_query, reason, status)
+    VALUES (?, ?, ?, 'PENDING')
+    """, (customer_phone, last_query, reason))
+    handover_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return handover_id
+
+
+def get_handover_queue():
+    """Fetches pending handovers for the staff dashboard."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM handover_queue WHERE status = 'PENDING' ORDER BY created_at DESC")
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def resolve_handover(handover_id):
+    """Marks a human handover as handled."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE handover_queue SET status = 'RESOLVED' WHERE id = ?", (handover_id,))
+    conn.commit()
+    conn.close()
+
+
+def log_chat_interaction(session_id, user_message, bot_response, intent, confidence, engine, latency_ms):
+    """Logs conversation interaction for explainability and evaluation."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+    INSERT INTO chat_logs (session_id, user_message, bot_response, detected_intent, confidence, engine_used, latency_ms)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+    """, (session_id, user_message, bot_response, intent, confidence, engine, latency_ms))
+    conn.commit()
+    conn.close()
+
+
+def get_chat_logs(limit=50):
+    """Fetches conversation logs for audit and teacher inspection."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM chat_logs ORDER BY created_at DESC LIMIT ?", (limit,))
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
