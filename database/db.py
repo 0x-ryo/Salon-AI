@@ -127,22 +127,34 @@ def init_db():
             cursor.execute("""
             INSERT INTO services (id, category, name, description, duration_minutes, price_inr)
             VALUES (?, ?, ?, ?, ?, ?)
-            """, (s["id"], s["category"], s["name"], s["description"], s["duration_minutes"], s["price_inr"]))
+            """, (s["id"], s["category"], s["name"], s.get("description", ""), s["duration_minutes"], s["price_inr"]))
 
-        for b in kb.get("barbers", []):
+        # Always seed a default barber entry for Razors-n-scissors
+        default_barbers = kb.get("barbers", [
+            {
+                "id": "B1",
+                "name": "Razors-n-scissors Staff",
+                "title": "Professional Barber",
+                "experience_years": 5,
+                "specialties": ["Hair Cut", "Beard Trim", "Hair Spa"],
+                "rating": 4.8,
+                "working_days": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"]
+            }
+        ])
+        for b in default_barbers:
             cursor.execute("""
             INSERT INTO barbers (id, name, title, experience_years, specialties, rating, working_days)
             VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, (b["id"], b["name"], b["title"], b["experience_years"], json.dumps(b["specialties"]), b["rating"], json.dumps(b["working_days"])))
+            """, (b["id"], b["name"], b.get("title","Barber"), b.get("experience_years",5),
+                  json.dumps(b.get("specialties",[])), b.get("rating",5.0),
+                  json.dumps(b.get("working_days",[]))))
 
-        # Seed sample upcoming appointments
+        # Seed a sample upcoming appointment
         today_str = datetime.now().strftime("%Y-%m-%d")
         cursor.execute("""
         INSERT INTO appointments (customer_name, phone, service_id, service_name, barber_id, barber_name, appointment_date, start_time, end_time, price_inr, status)
-        VALUES 
-        ('Amitabh Sen', '9876500001', 'S1', 'Classic Gentleman Haircut', 'B1', 'Vikram Singh', ?, '10:00', '10:30', 250, 'BOOKED'),
-        ('Rohit Mehra', '9876500002', 'S3', 'Royal Beard Trim & Sculpt', 'B2', 'Rahul Sharma', ?, '14:00', '14:25', 200, 'BOOKED')
-        """, (today_str, today_str))
+        VALUES ('Demo Customer', '9877175449', 'S1', 'Hair Cut', 'B1', 'Razors-n-scissors Staff', ?, '10:00', '10:20', 100, 'BOOKED')
+        """, (today_str,))
 
         conn.commit()
 
@@ -189,15 +201,18 @@ def get_all_barbers():
     return result
 
 
-def get_barber_by_name_or_id(identifier):
-    """Find a barber by ID or partial name."""
+def get_barber_by_name_or_id(identifier=None):
+    """Find a barber by ID or partial name, or return default salon staff."""
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("""
-    SELECT * FROM barbers 
-    WHERE id = ? OR LOWER(name) LIKE ?
-    LIMIT 1
-    """, (identifier, f"%{identifier.lower()}%"))
+    if not identifier or str(identifier).lower() in ["default", "any", "staff", "b1", "none"]:
+        cursor.execute("SELECT * FROM barbers LIMIT 1")
+    else:
+        cursor.execute("""
+        SELECT * FROM barbers 
+        WHERE id = ? OR LOWER(name) LIKE ?
+        LIMIT 1
+        """, (identifier, f"%{str(identifier).lower()}%"))
     row = cursor.fetchone()
     conn.close()
     if row:
@@ -213,6 +228,9 @@ def get_available_slots(barber_id, date_str):
     Computes available 30-minute time slots between 09:00 and 20:30 for a given barber on a given date.
     Eliminates slots that conflict with existing active bookings.
     """
+    barber = get_barber_by_name_or_id(barber_id)
+    b_id = barber["id"] if barber else "B1"
+
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -220,7 +238,7 @@ def get_available_slots(barber_id, date_str):
     cursor.execute("""
     SELECT start_time, end_time FROM appointments
     WHERE barber_id = ? AND appointment_date = ? AND status = 'BOOKED'
-    """, (barber_id, date_str))
+    """, (b_id, date_str))
     booked_slots = cursor.fetchall()
     conn.close()
 
@@ -305,6 +323,20 @@ def cancel_appointment_by_phone(phone):
     conn.commit()
     conn.close()
     return True, f"Appointment #{row['id']} for {row['service_name']} with {row['barber_name']} on {row['appointment_date']} at {row['start_time']} has been successfully cancelled."
+
+
+def cancel_appointment_by_slot(date_str, time_str, barber_id=None):
+    """Cancels any booked appointment at a specific slot (for test isolation)."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+    UPDATE appointments SET status = 'CANCELLED'
+    WHERE appointment_date = ? AND start_time = ? AND status = 'BOOKED'
+    """, (date_str, time_str))
+    count = cursor.rowcount
+    conn.commit()
+    conn.close()
+    return count > 0
 
 
 def get_appointments_by_phone(phone):
