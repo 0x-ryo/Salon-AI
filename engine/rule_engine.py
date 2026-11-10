@@ -1,8 +1,10 @@
 """
 Approach 1: Classical Rule-Based AI Engine & Finite State Machine (FSM).
+Razors-n-scissors Salon (INT428 Project 13)
 Implements:
 1. Regex & Keyword Pattern Matchers for Intent Classification
-2. Slot-Filling Dialogue State Tracker (Service, Barber, Date, Time, Phone, Name)
+2. Slot-Filling Dialogue State Tracker (Service, Date, Time, Phone, Name)
+   - Barber choice removed; auto-assigned to salon styling staff
 3. Step-by-Step Rule Firing & Explainability Trace (Unit II)
 """
 
@@ -13,6 +15,7 @@ from database.db import (
     book_appointment, cancel_appointment_by_phone, get_appointments_by_phone,
     log_complaint, add_to_handover_queue
 )
+from app.config import SALON_NAME, PHONE_WHATSAPP, ADDRESS, OPERATING_HOURS
 
 # Intent Regular Expression Catalog
 INTENT_PATTERNS = {
@@ -29,10 +32,10 @@ INTENT_PATTERNS = {
         r"\b(price|pricing|rate|rates|cost|kitna|charges|fees|how\s*much)\b"
     ],
     "service_inquiry": [
-        r"\b(service|services|menu|offer|haircut|fade|beard|shave|facial|spa|color|treatment)\b"
+        r"\b(service|services|menu|offer|haircut|hair\s*cut|fade|beard|shave|facial|spa|color|treatment|bleach|cleaner)\b"
     ],
     "barber_inquiry": [
-        r"\b(barber|barbers|stylist|stylists|specialist|vikram|rahul|amit|who\s*works|experience)\b"
+        r"\b(barber|barbers|stylist|stylists|specialist|who\s*works|experience|staff|choose\s*barber)\b"
     ],
     "availability_inquiry": [
         r"\b(available|availability|free|slot|slots|khali|empty)\b"
@@ -59,7 +62,7 @@ INTENT_PATTERNS = {
         r"\b(parking|park|car|bike|two\s*wheeler|vehicle)\b"
     ],
     "hygiene_inquiry": [
-        r"\b(hygiene|clean|cleanliness|sanitize|sterilize|blade|razor|disposable)\b"
+        r"\b(hygiene|clean|cleanliness|sanitize|sterilize|blade|razor|disposable|feature|features)\b"
     ],
     "walkin_policy": [
         r"\b(walk\s*in|walkin|direct\s*aana|without\s*appointment)\b"
@@ -72,11 +75,13 @@ class RuleBasedSalonChatbot:
     Deterministic Goal-Oriented Conversational Agent.
     Maintains slot-filling conversation state across turns.
     """
+    DEFAULT_BARBER = "Razors-n-scissors Staff"
+
     def __init__(self):
         self.state = "IDLE"
         self.slots = {
             "service": None,
-            "barber": None,
+            "barber": self.DEFAULT_BARBER,
             "date": None,
             "time_slot": None,
             "customer_name": None,
@@ -88,7 +93,7 @@ class RuleBasedSalonChatbot:
         self.state = "IDLE"
         self.slots = {
             "service": None,
-            "barber": None,
+            "barber": self.DEFAULT_BARBER,
             "date": None,
             "time_slot": None,
             "customer_name": None,
@@ -106,38 +111,50 @@ class RuleBasedSalonChatbot:
         if phone_match:
             extracted["phone"] = phone_match.group(1)
 
-        # 2. Service Extraction
+        # 2. Service Extraction (matches real Razors-n-scissors service names)
         services = get_all_services()
         for s in services:
             s_name_lower = s["name"].lower()
-            if s_name_lower in text_lower or (s["category"].lower() in text_lower and len(s["category"]) > 3):
+            if s_name_lower in text_lower:
                 extracted["service"] = s["name"]
                 break
-        if "service" not in extracted:
-            if re.search(r"\b(haircut|hair\s*cut|cut|baal)\b", text_lower):
-                extracted["service"] = "Classic Gentleman Haircut"
-            elif re.search(r"\b(fade|skin\s*fade|taper)\b", text_lower):
-                extracted["service"] = "Skin Fade / Taper Fade"
-            elif re.search(r"\b(beard|darhi|trim|shaping)\b", text_lower):
-                extracted["service"] = "Royal Beard Trim & Sculpt"
-            elif re.search(r"\b(shave|wet\s*shave)\b", text_lower):
-                extracted["service"] = "Traditional Hot Towel Wet Shave"
-            elif re.search(r"\b(combo|both)\b", text_lower):
-                extracted["service"] = "Signature Haircut + Beard Combo"
-            elif re.search(r"\b(facial|clean\s*up|detan)\b", text_lower):
-                extracted["service"] = "Detan & Charcoal Face Clean-Up"
-            elif re.search(r"\b(spa|dandruff)\b", text_lower):
-                extracted["service"] = "Revitalizing Anti-Dandruff Hair Spa"
-            elif re.search(r"\b(color|grey|coloring)\b", text_lower):
-                extracted["service"] = "Beard & Hair Color / Grey Blending"
 
-        # 3. Barber Extraction
-        barbers = get_all_barbers()
-        for b in barbers:
-            first_name = b["name"].split()[0].lower()
-            if first_name in text_lower or b["name"].lower() in text_lower:
-                extracted["barber"] = b["name"]
-                break
+        if "service" not in extracted:
+            if re.search(r"\b(hair\s*cut\s*&\s*hair\s*cut|colour\s*&\s*cut|color\s*&\s*cut|hair\s*color\s*&\s*cut)\b", text_lower):
+                extracted["service"] = "Hair Colour & Hair Cut"
+            elif re.search(r"\b(dandruff|anti\s*dandruff)\b", text_lower):
+                extracted["service"] = "Anti Dandruff Treatment (3 seatings)"
+            elif re.search(r"\b(gold|diamond|oxy\s*bleach)\b", text_lower):
+                extracted["service"] = "Gold/Diamond Facial with Oxy Bleach"
+            elif re.search(r"\b(whitening\s*facial|whitening)\b", text_lower):
+                extracted["service"] = "Whitening Facial"
+            elif re.search(r"\b(d\s*tan\s*facial|detan\s*facial)\b", text_lower):
+                extracted["service"] = "D Tan Facial"
+            elif re.search(r"\b(d\s*tan\s*cleaner|detan\s*cleaner)\b", text_lower):
+                extracted["service"] = "D Tan Cleaner"
+            elif re.search(r"\b(face\s*bleach|bleach)\b", text_lower):
+                extracted["service"] = "Face Bleach"
+            elif re.search(r"\b(keratin|keratin\s*spa)\b", text_lower):
+                extracted["service"] = "Keratin Hair Spa"
+            elif re.search(r"\b(matrix|loreal|loreal\s*matrix)\b", text_lower):
+                extracted["service"] = "Loreal Matrix Hair Spa"
+            elif re.search(r"\b(olive|almond)\b", text_lower):
+                extracted["service"] = "Head Massage Olive/Almond Oil"
+            elif re.search(r"\b(head\s*massage|massage)\b", text_lower):
+                extracted["service"] = "Head Massage"
+            elif re.search(r"\b(head\s*shave)\b", text_lower):
+                extracted["service"] = "Head Shave"
+            elif re.search(r"\b(head\s*wash|wash)\b", text_lower):
+                extracted["service"] = "Head Wash"
+            elif re.search(r"\b(beard|darhi|trim|gaming\s*shave|shave)\b", text_lower):
+                extracted["service"] = "Beard Trim / Gaming Shave"
+            elif re.search(r"\b(colour|color|dye)\b", text_lower):
+                extracted["service"] = "Hair Colour"
+            elif re.search(r"\b(haircut|hair\s*cut|cut|baal)\b", text_lower):
+                extracted["service"] = "Hair Cut"
+
+        # 3. Barber Extraction (Auto-assigned)
+        extracted["barber"] = self.DEFAULT_BARBER
 
         # 4. Date Extraction (today, tomorrow, or YYYY-MM-DD)
         today = datetime.now()
@@ -157,7 +174,7 @@ class RuleBasedSalonChatbot:
             min_str = time_match.group(2) or "00"
             meridiem = time_match.group(3)
 
-            # Avoid mistaking 10-digit phone start as time
+            # Avoid mistaking phone start as time
             if not phone_match or time_match.start() < phone_match.start() or time_match.end() > phone_match.end():
                 try:
                     hour = int(hour_str)
@@ -167,7 +184,7 @@ class RuleBasedSalonChatbot:
                             hour += 12
                         elif meridiem == "am" and hour == 12:
                             hour = 0
-                    if 8 <= hour <= 21:  # Salon operating range
+                    if 8 <= hour <= 21:  # Operating range
                         extracted["time_slot"] = f"{hour:02d}:{minute:02d}"
                 except ValueError:
                     pass
@@ -176,8 +193,7 @@ class RuleBasedSalonChatbot:
         name_match = re.search(r"(?:for|name\s*is|i\s*am|this\s*is)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)", text)
         if name_match:
             candidate = name_match.group(1)
-            # Ensure not a barber name or service name
-            if "Vikram" not in candidate and "Rahul" not in candidate and "Amit" not in candidate:
+            if "Staff" not in candidate and "Razors" not in candidate:
                 extracted["customer_name"] = candidate
 
         return extracted
@@ -228,37 +244,42 @@ class RuleBasedSalonChatbot:
         # 2. Extract Entities
         new_slots = self.extract_entities(user_message)
         for k, v in new_slots.items():
-            if v and not self.slots[k]:
+            if v and not self.slots.get(k):
                 self.slots[k] = v
                 trace["rules_fired"].append(f"EXTRACTED_SLOT: {k} = '{v}'")
 
         # 3. FSM Execution
         response_text = ""
 
-        # Check for immediate escalation
+        # Immediate escalation
         if intent == "human_handover":
             self.reset_state()
             phone = self.slots.get("phone") or "Customer"
             add_to_handover_queue(phone, user_message, reason="User requested human staff")
             trace["sql_queries"].append("INSERT INTO handover_queue")
-            response_text = "🤝 I have notified Mr. Rajesh Kumar (Salon Manager). A staff member will attend to your request right away or call you. You can also reach our desk directly at +91 98765 43210."
+            response_text = f"🤝 I have notified the staff at {SALON_NAME}. You can also reach our desk directly via call or WhatsApp at {PHONE_WHATSAPP}."
             self.state = "IDLE"
 
-        # Check for complaints
+        # Complaints
         elif intent == "lodge_complaint":
             self.reset_state()
             name = self.slots.get("customer_name") or "Valued Customer"
             phone = self.slots.get("phone") or "Pending"
             cid = log_complaint(name, phone, user_message, severity="HIGH")
             trace["sql_queries"].append(f"INSERT INTO complaints (ID={cid})")
-            response_text = f"🙏 We sincerely apologize for your experience. Your complaint has been registered as Ticket #{cid}. Our salon owner personally reviews all tickets and will address this immediately."
+            response_text = f"🙏 We sincerely apologize for your experience. Your complaint has been registered as Ticket #{cid}. Our salon manager reviews every issue and will address this immediately."
             self.state = "IDLE"
 
-        # Check for cancellation
+        # Cancellation while in active slot filling
+        elif self.state.startswith("AWAITING_") and (user_message.lower().strip() in ["cancel", "stop", "reset", "exit"] or intent == "farewell"):
+            self.reset_state()
+            response_text = "Booking process cancelled. How else can I assist you at Razors-n-scissors?"
+
+        # Cancellation
         elif intent == "cancel_appointment":
             phone = self.slots.get("phone")
             if not phone:
-                response_text = "To cancel your appointment, please provide your 10-digit registered phone number (e.g., 'Cancel booking for 9876543210')."
+                response_text = "To cancel your appointment, please provide your 10-digit registered phone number (e.g., 'Cancel booking for 9877175449')."
                 self.state = "AWAITING_CANCEL_PHONE"
             else:
                 success, msg = cancel_appointment_by_phone(phone)
@@ -266,7 +287,7 @@ class RuleBasedSalonChatbot:
                 response_text = msg
                 self.reset_state()
 
-        # Handle cancellation phone slot state
+        # Cancellation phone state
         elif self.state == "AWAITING_CANCEL_PHONE":
             phone = self.slots.get("phone")
             if phone:
@@ -277,7 +298,11 @@ class RuleBasedSalonChatbot:
             else:
                 response_text = "Please enter a valid 10-digit mobile number to locate and cancel your reservation."
 
-        # Check status of booking
+        # Active Slot-Filling State Progression (Takes priority over general informational queries during active booking)
+        elif self.state.startswith("AWAITING_") and not self.state.startswith("AWAITING_STATUS"):
+            response_text = self._handle_slot_filling(trace)
+
+        # Check booking status
         elif intent == "view_booking":
             phone = self.slots.get("phone")
             if not phone:
@@ -288,69 +313,89 @@ class RuleBasedSalonChatbot:
                 trace["sql_queries"].append(f"SELECT * FROM appointments WHERE phone='{phone}'")
                 if bookings:
                     b = bookings[0]
-                    response_text = f"📋 Booking Found: #{b['id']} for {b['service_name']} with {b['barber_name']} on {b['appointment_date']} at {b['start_time']}. Status: **{b['status']}**."
+                    response_text = f"📋 Booking Found: #{b['id']} for {b['service_name']} on {b['appointment_date']} at {b['start_time']}. Status: **{b['status']}**."
                 else:
                     response_text = f"No active appointments found for phone ending in {phone[-4:]}."
                 self.reset_state()
 
-        # Service / Pricing / FAQ Queries
+        # Service / Pricing Queries
         elif intent == "pricing_inquiry":
             service_kw = self.slots.get("service")
             if service_kw:
-                s = [x for x in get_all_services() if x["name"] == service_kw]
+                s = [x for x in get_all_services() if x["name"].lower() == service_kw.lower()]
                 if s:
                     s_obj = s[0]
-                    response_text = f"💰 **{s_obj['name']}** is priced at **₹{int(s_obj['price_inr'])}** (Duration: {s_obj['duration_minutes']} mins). Would you like to book an appointment for this?"
+                    response_text = f"💰 **{s_obj['name']}** is priced at **₹{int(s_obj['price_inr'])}** (Duration: {s_obj['duration_minutes']} mins). Would you like to book a slot for this?"
                 else:
-                    response_text = "Our haircut rates start from ₹250 (Classic) and ₹350 (Fade). Beard styling is ₹200, and our Signature Hair+Beard Combo is ₹450."
+                    response_text = "At Razors-n-scissors, Hair Cut is ₹100, Beard Trim is ₹50, and Head Wash is ₹50. Say 'services' to see the full list."
             else:
-                response_text = "Here is our standard price menu:\n• Classic Haircut: ₹250\n• Skin Fade / Taper: ₹350\n• Beard Sculpting: ₹200\n• Hot Towel Wet Shave: ₹180\n• Signature Hair + Beard Combo: ₹450\n• Charcoal Facial Clean-Up: ₹500\n• Anti-Dandruff Hair Spa: ₹650"
+                response_text = (
+                    "💈 **Razors-n-scissors Price List (FOR BOY'S SALOON):**\n"
+                    "• Hair Cut: ₹100\n"
+                    "• Head Wash: ₹50\n"
+                    "• Head Shave: ₹120\n"
+                    "• Beard Trim / Gaming Shave: ₹50\n"
+                    "• Head Massage: ₹100\n"
+                    "• Head Massage Olive/Almond Oil: ₹150\n"
+                    "• Face Bleach: ₹180\n"
+                    "• D Tan Cleaner: ₹300\n"
+                    "• D Tan Facial: ₹450\n"
+                    "• Gold/Diamond Facial with Oxy Bleach: ₹700\n"
+                    "• Whitening Facial: ₹600\n"
+                    "• Keratin Hair Spa: ₹400\n"
+                    "• Loreal Matrix Hair Spa: ₹500\n"
+                    "• Hair Colour: ₹450\n"
+                    "• Hair Colour & Hair Cut: ₹500\n"
+                    "• Anti Dandruff Treatment (3 seatings): ₹1500"
+                )
 
         elif intent == "timing_inquiry":
-            response_text = "⏰ **Urban Trim & Groom Salon Hours:**\n• Monday to Friday: 9:00 AM – 9:00 PM\n• Saturday & Sunday: 8:30 AM – 9:30 PM\nWould you like to reserve a time slot today?"
+            response_text = f"⏰ **{SALON_NAME} Timings:**\n• {OPERATING_HOURS}\n• Location: {ADDRESS}\nWould you like to reserve a time slot today?"
 
         elif intent == "barber_inquiry":
-            barbers = get_all_barbers()
-            lines = ["✂️ **Meet Our Master Stylists:**"]
-            for b in barbers:
-                specs = ", ".join(b["specialties"])
-                lines.append(f"• **{b['name']}** ({b['title']}, {b['experience_years']} yrs exp, ⭐ {b['rating']}) — Specializes in {specs}.")
-            lines.append("\nYou can book any stylist directly through me!")
-            response_text = "\n".join(lines)
+            response_text = (
+                f"✂️ **{SALON_NAME} Styling Staff:**\n"
+                "All services are handled by our professionally trained styling staff with strict hygiene standards. "
+                "You do not need to choose a specific barber — our expert staff will attend to you promptly!"
+            )
 
         elif intent == "service_inquiry":
             services = get_all_services()
-            lines = ["💈 **Urban Trim & Groom Service Menu:**"]
+            lines = [f"💈 **{SALON_NAME} Service Menu:**"]
             for s in services:
                 lines.append(f"• **{s['name']}** — ₹{int(s['price_inr'])} ({s['duration_minutes']} mins)")
             lines.append("\nWhich service would you like to schedule?")
             response_text = "\n".join(lines)
 
         elif intent == "payment_inquiry":
-            response_text = "💳 We accept all major payment modes: Cash, UPI (Google Pay, PhonePe, Paytm, BHIM), and Debit/Credit Cards. No extra transaction fees."
+            response_text = "💳 We accept Cash and all UPI apps (Google Pay, PhonePe, Paytm). No extra transaction fees."
 
         elif intent == "parking_inquiry":
-            response_text = "🅿️ Yes! Ample free parking for bikes and cars is available right in front of Shop 14, Main Market, Model Town."
+            response_text = f"🅿️ Ample parking is conveniently available near {ADDRESS} on campus."
 
         elif intent == "hygiene_inquiry":
-            response_text = "🧼 100% Hygiene Guaranteed: We use fresh single-use razor blades for every client, UV autoclave sterilized scissors, and fresh disposable neck wraps."
+            response_text = (
+                "🧼 **Salient Features of Razors-n-scissors:**\n"
+                "1. Maintenance of hygiene (sterilized shears, fresh blades, fresh towels)\n"
+                "2. Professionally trained staff\n"
+                "3. Pocket friendly rates"
+            )
 
         elif intent == "walkin_policy":
-            response_text = "🚶 Walk-ins are always welcome! However, appointments booked here are prioritized so you don't have to wait during rush hours."
+            response_text = "🚶 Walk-ins are always welcome! However, appointments booked here are given priority so you skip the queue."
 
         elif intent == "greeting":
-            response_text = "Hello! Welcome to Urban Trim & Groom Barber Salon. I can help you check prices, view master barbers, or book an appointment in seconds. How may I help you today?"
+            response_text = f"Hello! Welcome to {SALON_NAME} at BH-5. I can help you check prices, services, or book an appointment in seconds. How may I assist you today?"
 
         elif intent == "farewell":
-            response_text = "Thank you for connecting with Urban Trim & Groom! Have a great day and see you at the salon. ✂️"
+            response_text = f"Thank you for contacting {SALON_NAME}! Groom yourself at Razors-n-scissors. Have a great day! ✂️"
 
-        # Booking Flow Handling (Slot Filling State Machine)
+        # Booking Flow Handling (Slot Filling State Machine without Barber Choice)
         elif intent == "book_appointment" or self.state.startswith("AWAITING_"):
             response_text = self._handle_slot_filling(trace)
 
         else:
-            # Fallback
-            response_text = "I'm not completely sure I understood that. You can ask me about haircut prices, our barber timings, or say 'Book appointment' to reserve a slot."
+            response_text = "I'm not completely sure I understood that. You can ask about haircut prices, our timings at BH-5, or say 'Book appointment' to reserve a slot."
             self.state = "IDLE"
 
         trace["state_after"] = self.state
@@ -364,39 +409,45 @@ class RuleBasedSalonChatbot:
         }
 
     def _handle_slot_filling(self, trace: dict) -> str:
-        """Executes slot-filling dialog progression."""
-        # Check missing slots in priority order:
-        # 1. Service -> 2. Barber -> 3. Date -> 4. Time -> 5. Name -> 6. Phone
+        """
+        Executes slot-filling dialog progression.
+        Slots required: 1. Service -> 2. Date -> 3. Time -> 4. Customer Name -> 5. Phone
+        (Barber choice removed - auto-assigned to salon styling staff)
+        """
+        # Ensure barber slot is auto-populated
+        if not self.slots.get("barber"):
+            self.slots["barber"] = self.DEFAULT_BARBER
 
+        # Slot 1: Service
         if not self.slots["service"]:
             self.state = "AWAITING_SERVICE"
-            return "Sure! Which service would you like? (Options: Classic Haircut, Skin Fade, Beard Sculpt, Hair+Beard Combo, Facial, Hair Spa)"
+            return (
+                "Sure! Which service would you like to book?\n"
+                "(Options: Hair Cut [₹100], Beard Trim [₹50], Head Wash [₹50], "
+                "D Tan Facial [₹450], Keratin Hair Spa [₹400], Hair Colour & Cut [₹500], etc.)"
+            )
 
-        if not self.slots["barber"]:
-            self.state = "AWAITING_BARBER"
-            return f"Great choice ({self.slots['service']})! Which barber would you prefer? You can choose **Vikram Singh**, **Rahul Sharma**, or **Amit Verma** (or say 'Any')."
-
-        if self.slots["barber"] in ["any", "Any", "anyone"]:
-            self.slots["barber"] = "Vikram Singh"  # Default master barber
-
+        # Slot 2: Date
         if not self.slots["date"]:
             self.state = "AWAITING_DATE"
-            return "What date would you like to visit? (Say 'today', 'tomorrow', or a date like 2026-11-12)"
+            return f"Great choice ({self.slots['service']})! What date would you like to visit? (Say 'today', 'tomorrow', or a date like 2026-11-15)"
 
+        # Slot 3: Time
         if not self.slots["time_slot"]:
             self.state = "AWAITING_TIME"
-            # Show available slots for that barber and date
-            slots = get_available_slots(self.slots["barber"], self.slots["date"])[:6]
-            slot_str = ", ".join(slots)
-            return f"Available times for {self.slots['barber']} on {self.slots['date']}: {slot_str}. What time suits you?"
+            slots = get_available_slots("B1", self.slots["date"])[:6]
+            slot_str = ", ".join(slots) if slots else "09:00, 10:00, 11:00, 14:00, 16:00, 18:00"
+            return f"Available slots on {self.slots['date']}: {slot_str}. What time suits you?"
 
+        # Slot 4: Customer Name
         if not self.slots["customer_name"]:
             self.state = "AWAITING_NAME"
             return "May I have your name for the reservation?"
 
+        # Slot 5: Phone Number
         if not self.slots["phone"]:
             self.state = "AWAITING_PHONE"
-            return f"Thanks {self.slots['customer_name']}! Please provide your 10-digit mobile number so we can send your confirmation SMS."
+            return f"Thanks {self.slots['customer_name']}! Please provide your 10-digit mobile number so we can confirm your booking."
 
         # All slots collected! Execute booking in database
         b_name = self.slots["barber"]
@@ -411,6 +462,15 @@ class RuleBasedSalonChatbot:
 
         self.reset_state()
         if success:
-            return f"🎉 **Booking Confirmed!**\n\n• **Appointment ID:** #{app_id}\n• **Client:** {c_name}\n• **Service:** {s_name}\n• **Barber:** {b_name}\n• **When:** {dt} at {tm}\n• **Contact:** {ph}\n\nWe look forward to styling you at Urban Trim & Groom!"
+            return (
+                f"🎉 **Booking Confirmed at {SALON_NAME}!**\n\n"
+                f"• **Appointment ID:** #{app_id}\n"
+                f"• **Client:** {c_name}\n"
+                f"• **Service:** {s_name}\n"
+                f"• **When:** {dt} at {tm}\n"
+                f"• **Contact:** {ph}\n"
+                f"• **Location:** {ADDRESS}\n\n"
+                f"We look forward to welcoming you! For enquiries or changes, call/WhatsApp {PHONE_WHATSAPP}. ✂️"
+            )
         else:
             return f"⚠️ {msg}\nWould you like to try another time slot?"
