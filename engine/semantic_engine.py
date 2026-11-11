@@ -42,9 +42,9 @@ class SemanticSalonRetriever:
         with open(KB_PATH, "r", encoding="utf-8") as f:
             kb = json.load(f)
 
-        # 1. Index FAQs
+        # 1. Index FAQs (Question + Answer for richer semantic coverage)
         for i, faq in enumerate(kb.get("faqs", [])):
-            self.documents.append(faq["question"])
+            self.documents.append(f"{faq['question']} {faq['answer']}")
             self.doc_metadata.append({
                 "type": "faq",
                 "id": f"FAQ-{i+1}",
@@ -53,29 +53,46 @@ class SemanticSalonRetriever:
                 "source": "Salon Knowledge Base > FAQs"
             })
 
+        # 2. Index Operating Info & Policies
+        s_info = kb.get("salon_info", {})
+        hrs = s_info.get("operating_hours", {})
+        hrs_text = f"Opening and closing hours timings: Monday-Friday {hrs.get('monday', '9:00-21:00')}, Saturday-Sunday {hrs.get('saturday', '8:30-21:30')}. Address: {s_info.get('address')} Phone: {s_info.get('contact_phone')}."
+        self.documents.append(hrs_text)
+        self.doc_metadata.append({
+            "type": "info",
+            "id": "INFO-1",
+            "question": "What are your opening hours and location?",
+            "answer": f"⏰ **Opening Hours:** Mon-Fri 9:00 AM – 9:00 PM, Sat-Sun 8:30 AM – 9:30 PM.\n📍 **Address:** {s_info.get('address')}",
+            "source": "Salon Information & Policies"
+        })
+
         # 2. Index Services
         for s in kb.get("services", []):
-            service_text = f"{s['name']}: {s['description']} Category: {s['category']}, Price: ₹{s['price_inr']}, Duration: {s['duration_minutes']} minutes."
+            desc = s.get("description", f"{s['category']} service at Razors-n-scissors.")
+            service_text = f"{s['name']}: {desc} Category: {s['category']}, Price: ₹{s['price_inr']}, Duration: {s['duration_minutes']} minutes."
             self.documents.append(service_text)
             self.doc_metadata.append({
                 "type": "service",
                 "id": s["id"],
                 "question": f"How much is {s['name']} and what does it include?",
-                "answer": f"💈 **{s['name']}** (Category: {s['category']}): {s['description']} Priced at **₹{int(s['price_inr'])}** (Duration: {s['duration_minutes']} mins).",
+                "answer": f"💈 **{s['name']}** — ₹{int(s['price_inr'])} (approx. {s['duration_minutes']} mins).",
                 "source": f"Salon Service Catalog > {s['category']}"
             })
 
-        # 3. Index Barbers
+        # 3. Index Barbers (optional — KB may not have barbers)
         for b in kb.get("barbers", []):
-            specs = ", ".join(b["specialties"])
-            barber_text = f"{b['name']}, {b['title']}, {b['experience_years']} years experience, rating {b['rating']}. Specialties: {specs}."
+            specs = ", ".join(b.get("specialties", []))
+            title = b.get("title", "Stylist")
+            exp = b.get("experience_years", "")
+            rating = b.get("rating", "")
+            barber_text = f"{b['name']}, {title}, {exp} years experience, rating {rating}. Specialties: {specs}."
             self.documents.append(barber_text)
             self.doc_metadata.append({
                 "type": "barber",
-                "id": b["id"],
+                "id": b.get("id", b["name"]),
                 "question": f"Who is {b['name']} and what are their styling specialties?",
-                "answer": f"✂️ **{b['name']}** ({b['title']}) brings {b['experience_years']} years of professional barbering experience with a {b['rating']}⭐ rating. Specialties: {specs}.",
-                "source": "Salon Master Stylist Profiles"
+                "answer": f"✂️ **{b['name']}** ({title}), {exp} yrs exp, {rating}⭐. Specialties: {specs}.",
+                "source": "Salon Staff Profiles"
             })
 
     def _init_tfidf(self):
@@ -133,7 +150,7 @@ class SemanticSalonRetriever:
             })
         return results
 
-    def query(self, user_query: str, threshold=0.45) -> dict:
+    def query(self, user_query: str, threshold=0.35) -> dict:
         """
         Executes semantic retrieval with confidence score and explainability provenance.
         """

@@ -19,7 +19,7 @@ class HybridSalonAgent:
     """
     Central Orchestrator for Salon Customer Support.
     Provides dynamic engine switching (Rule-Based vs Semantic vs Hybrid)
-    and full explainability trace generation for CSE276 evaluation.
+    and full explainability trace generation for INT428 evaluation.
     """
     def __init__(self):
         self.rule_engine = RuleBasedSalonChatbot()
