@@ -21,7 +21,15 @@ if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 from engine.hybrid_agent import HybridSalonAgent
-from config import SALON_NAME, PHONE_WHATSAPP, ADDRESS
+try:
+    from salon_config import SALON_NAME, PHONE_WHATSAPP, ADDRESS
+except Exception:
+    try:
+        from app.salon_config import SALON_NAME, PHONE_WHATSAPP, ADDRESS
+    except Exception:
+        SALON_NAME = "Razors-n-scissors"
+        PHONE_WHATSAPP = "+91 9877175449"
+        ADDRESS = "BH-5, Lovely Professional University Campus, Phagwara, Punjab"
 
 app = FastAPI(title="Razors-n-scissors WhatsApp Bot (Twilio Sandbox)")
 

@@ -23,7 +23,21 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from config import SALON_NAME, PHONE_WHATSAPP, ADDRESS, OPERATING_HOURS, TAGLINE
+APP_DIR = os.path.dirname(os.path.abspath(__file__))
+if APP_DIR not in sys.path:
+    sys.path.insert(0, APP_DIR)
+
+try:
+    from salon_config import SALON_NAME, PHONE_WHATSAPP, ADDRESS, OPERATING_HOURS, TAGLINE
+except Exception:
+    try:
+        from app.salon_config import SALON_NAME, PHONE_WHATSAPP, ADDRESS, OPERATING_HOURS, TAGLINE
+    except Exception:
+        SALON_NAME = "Razors-n-scissors"
+        PHONE_WHATSAPP = "+91 9877175449"
+        ADDRESS = "BH-5, Lovely Professional University Campus, Phagwara, Punjab"
+        OPERATING_HOURS = "Mon–Sun: 9:00 AM – 9:00 PM"
+        TAGLINE = "Groom yourself at Razors-n-scissors"
 from database.db import (
     init_db, get_all_services, get_all_barbers, get_all_appointments,
     get_all_complaints, resolve_complaint, get_handover_queue, resolve_handover,

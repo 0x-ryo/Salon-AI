@@ -15,7 +15,16 @@ from database.db import (
     book_appointment, cancel_appointment_by_phone, get_appointments_by_phone,
     log_complaint, add_to_handover_queue
 )
-from config import SALON_NAME, PHONE_WHATSAPP, ADDRESS, OPERATING_HOURS
+try:
+    from salon_config import SALON_NAME, PHONE_WHATSAPP, ADDRESS, OPERATING_HOURS
+except Exception:
+    try:
+        from app.salon_config import SALON_NAME, PHONE_WHATSAPP, ADDRESS, OPERATING_HOURS
+    except Exception:
+        SALON_NAME = "Razors-n-scissors"
+        PHONE_WHATSAPP = "+91 9877175449"
+        ADDRESS = "BH-5, Lovely Professional University Campus, Phagwara, Punjab"
+        OPERATING_HOURS = "Mon–Sun: 9:00 AM – 9:00 PM"
 
 # Intent Regular Expression Catalog
 INTENT_PATTERNS = {
