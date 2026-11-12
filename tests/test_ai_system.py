@@ -156,6 +156,10 @@ def test_hybrid_agent_explainability_trace():
 
 def test_slot_filling_without_barber_choice():
     """Verifies slot-filling flow transitions directly without prompting for barber choice."""
+    from datetime import datetime, timedelta
+    tomorrow_str = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
+    cancel_appointment_by_slot(tomorrow_str, "16:00")
+
     bot = RuleBasedSalonChatbot()
 
     # Step 1: User says book appointment

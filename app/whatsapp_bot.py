@@ -7,7 +7,7 @@ Handles inbound WhatsApp messages from Twilio WhatsApp Sandbox:
 2. Auto-binds customer phone and profile name from Twilio metadata
 3. Routes to HybridSalonAgent (Guardrails -> Intent -> Slot Filling / Semantic Retrieval)
 4. Returns compliant Twilio TwiML XML messaging responses
-5. Also supports JSON POST for testing and CI/CD pipelines
+5. Clean modular structure for zero-dependency unit and integration testing
 """
 
 import os
@@ -58,30 +58,11 @@ def _clean_phone(from_str: str) -> str:
     return match.group(1) if match else ""
 
 
-@app.post("/whatsapp/webhook")
-async def whatsapp_webhook(request: Request):
+def handle_whatsapp_message(from_user: str, body_text: str = "", profile_name: str = "") -> dict:
     """
-    Twilio WhatsApp Webhook.
-    Accepts both application/x-www-form-urlencoded (Twilio default)
-    and application/json (for automated testing / cURL).
+    Core business logic processing inbound WhatsApp messages.
+    Returns: {"twiml": str, "reply": str, "sender": str}
     """
-    content_type = request.headers.get("content-type", "")
-    from_user = ""
-    body_text = ""
-    profile_name = ""
-
-    if "application/json" in content_type:
-        data = await request.json()
-        from_user = data.get("From", "+919877175449")
-        body_text = data.get("Body", "").strip()
-        profile_name = data.get("ProfileName", "")
-    else:
-        form_data = await request.form()
-        from_user = form_data.get("From", "+919877175449")
-        body_text = (form_data.get("Body") or "").strip()
-        profile_name = form_data.get("ProfileName", "")
-
-    # Clean the sender phone identifier
     clean_sender = from_user.replace("whatsapp:", "").strip()
     extracted_phone = _clean_phone(clean_sender)
 
@@ -94,9 +75,11 @@ async def whatsapp_webhook(request: Request):
     if profile_name and not agent.rule_engine.slots.get("customer_name"):
         agent.rule_engine.slots["customer_name"] = profile_name
 
-    # Check for empty body / greeting trigger
-    if not body_text:
-        welcome_reply = (
+    body_clean = (body_text or "").strip()
+
+    # Empty body / greeting trigger
+    if not body_clean:
+        reply = (
             f"👋 Welcome to *{SALON_NAME}* (BH-5, LPU)!\n\n"
             "I can help you:\n"
             "• 💈 Check prices & services (type *services* or *rates*)\n"
@@ -105,25 +88,60 @@ async def whatsapp_webhook(request: Request):
             "• ❌ Cancel a booking (type *cancel*)\n"
             "• 🤝 Speak to staff (type *manager*)"
         )
-        return Response(content=_build_twiml(welcome_reply), media_type="application/xml")
+        return {
+            "twiml": _build_twiml(reply),
+            "reply": reply,
+            "sender": clean_sender
+        }
 
     # Handle session reset keyword
-    if body_text.lower() in ["reset", "restart", "start over"]:
+    if body_clean.lower() in ["reset", "restart", "start over"]:
         agent.reset_session()
         reply = f"🔄 Conversation session reset! How can I assist you at {SALON_NAME} today?"
-        return Response(content=_build_twiml(reply), media_type="application/xml")
+        return {
+            "twiml": _build_twiml(reply),
+            "reply": reply,
+            "sender": clean_sender
+        }
 
     # Process user query through Hybrid Salon Agent
-    result = agent.handle_message(body_text, engine_mode="Hybrid")
+    result = agent.handle_message(body_clean, engine_mode="Hybrid")
     reply = result.get("response", "I'm sorry, I couldn't process that. Please try again.")
 
-    # Return Twilio TwiML XML
-    twiml_output = _build_twiml(reply)
-    return Response(content=twiml_output, media_type="application/xml")
+    return {
+        "twiml": _build_twiml(reply),
+        "reply": reply,
+        "sender": clean_sender,
+        "trace": result.get("trace")
+    }
+
+
+@app.post("/whatsapp/webhook")
+async def whatsapp_webhook(request: Request):
+    """
+    Twilio WhatsApp Webhook.
+    Accepts both application/x-www-form-urlencoded (Twilio default)
+    and application/json (for API testing).
+    """
+    content_type = request.headers.get("content-type", "")
+
+    if "application/json" in content_type:
+        data = await request.json()
+        from_user = data.get("From", "+919877175449")
+        body_text = data.get("Body", "")
+        profile_name = data.get("ProfileName", "")
+    else:
+        form_data = await request.form()
+        from_user = form_data.get("From", "+919877175449")
+        body_text = form_data.get("Body", "")
+        profile_name = form_data.get("ProfileName", "")
+
+    result = handle_whatsapp_message(from_user, body_text, profile_name)
+    return Response(content=result["twiml"], media_type="application/xml")
 
 
 @app.get("/health")
-async def health():
+def health():
     return {
         "status": "healthy",
         "salon": SALON_NAME,
