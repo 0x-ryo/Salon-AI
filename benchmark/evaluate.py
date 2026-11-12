@@ -1,5 +1,5 @@
 """
-Comparative Evaluation Benchmark Suite for CSE276 Course Project.
+Comparative Evaluation Benchmark Suite for INT428 Course Project.
 Compares:
 - Approach 1: Classical Rule-Based FSM
 - Approach 2: Semantic Vector Retrieval (Dense Sentence-Transformers)
@@ -137,7 +137,7 @@ def run_benchmark():
 
 
 if __name__ == "__main__":
-    print("Running CSE276 Comparative Evaluation Benchmark with Dense Embeddings...")
+    print("Running INT428 Comparative Evaluation Benchmark with Dense Embeddings...")
     res = run_benchmark()
     print("Benchmark complete!")
     print(json.dumps(res["summary"], indent=2))

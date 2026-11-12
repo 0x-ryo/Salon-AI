@@ -23,52 +23,50 @@
   {
     "id": "Q04",
     "category": "direct_pricing",
-    "query": "How much does a Classic Gentleman Haircut cost?",
+    "query": "How much does a Hair Cut cost?",
     "expected_intent": "pricing_inquiry",
-    "expected_service": "Classic Gentleman Haircut"
+    "expected_service": "Hair Cut"
   },
   {
     "id": "Q05",
     "category": "paraphrase_pricing",
-    "query": "Give me the price for a skin fade and beard trim",
+    "query": "Give me the price for a beard trim and head wash",
     "expected_intent": "pricing_inquiry",
-    "expected_service": "Skin Fade / Taper Fade"
+    "expected_service": "Beard Trim / Gaming Shave"
   },
   {
     "id": "Q06",
     "category": "paraphrase_pricing",
-    "query": "Kitna charge lagega beard color ka?",
+    "query": "Kitna charge lagega hair color ka?",
     "expected_intent": "pricing_inquiry",
-    "expected_service": "Beard & Hair Color / Grey Blending"
+    "expected_service": "Hair Colour"
   },
   {
     "id": "Q07",
     "category": "service_inquiry",
     "query": "What hair treatments do you offer for dandruff?",
     "expected_intent": "service_inquiry",
-    "expected_service": "Revitalizing Anti-Dandruff Hair Spa"
+    "expected_service": "Anti Dandruff Treatment (3 seatings)"
   },
   {
     "id": "Q08",
     "category": "barber_inquiry",
-    "query": "Who are your master barbers?",
+    "query": "Who cuts hair at Razors-n-scissors?",
     "expected_intent": "barber_inquiry"
   },
   {
     "id": "Q09",
     "category": "barber_inquiry",
-    "query": "Tell me about Vikram Singh's experience and specialty",
-    "expected_intent": "barber_inquiry",
-    "expected_barber": "Vikram Singh"
+    "query": "Tell me about your styling staff and experience",
+    "expected_intent": "barber_inquiry"
   },
   {
     "id": "Q10",
     "category": "booking_complete",
-    "query": "I want to book an appointment with Vikram for Classic Gentleman Haircut tomorrow at 4:00 PM for Suman phone 9876543210",
+    "query": "I want to book an appointment for Hair Cut tomorrow at 4:00 PM for Suman phone 9876543210",
     "expected_intent": "book_appointment",
     "extracted_slots": {
-      "service": "Classic Gentleman Haircut",
-      "barber": "Vikram Singh",
+      "service": "Hair Cut",
       "date": "tomorrow",
       "time_slot": "16:00",
       "customer_name": "Suman",
@@ -81,28 +79,27 @@
     "query": "Book me a haircut tomorrow at 5pm",
     "expected_intent": "book_appointment",
     "extracted_slots": {
-      "service": "Haircut",
+      "service": "Hair Cut",
       "date": "tomorrow",
       "time_slot": "17:00"
     },
-    "missing_slots": ["barber", "customer_name", "phone"]
+    "missing_slots": ["customer_name", "phone"]
   },
   {
     "id": "Q12",
     "category": "booking_partial",
-    "query": "I need an appointment with Rahul Sharma",
+    "query": "I need an appointment for D Tan Facial",
     "expected_intent": "book_appointment",
     "extracted_slots": {
-      "barber": "Rahul Sharma"
+      "service": "D Tan Facial"
     },
-    "missing_slots": ["service", "date", "time_slot", "phone"]
+    "missing_slots": ["date", "time_slot", "phone"]
   },
   {
     "id": "Q13",
     "category": "availability_check",
-    "query": "Is Amit Verma available on Friday at 3:00 PM?",
-    "expected_intent": "availability_inquiry",
-    "expected_barber": "Amit Verma"
+    "query": "Are slots free on Friday at 3:00 PM?",
+    "expected_intent": "availability_inquiry"
   },
   {
     "id": "Q14",

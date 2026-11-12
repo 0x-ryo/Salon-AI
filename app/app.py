@@ -1,8 +1,8 @@
 """
-Urban Trim & Groom Barber Salon - Intelligent Customer Support & Management System
-CSE276 Course Project (Group 13 - Suman Saha)
+Razors-n-scissors Barber Salon - Intelligent Customer Support & Management System
+INT428 Course Project (Group 13 - Suman Saha)
 Features:
-- Tab 1: Customer Chat Interface (Zero-Download Web / QR Access)
+- Tab 1: Salon Owner / Manager Dashboard (Appointments, Complaints, XAI)
 - Tab 2: Salon Owner / Manager Tablet Portal (Appointments, Complaints, Handover Queue)
 - Tab 3: AI Lab & Benchmark Inspector (Approach 1 vs Approach 2 Evaluation & XAI)
 """
@@ -29,7 +29,7 @@ from benchmark.evaluate import run_benchmark, RESULTS_PATH
 
 # Page Configuration
 st.set_page_config(
-    page_title="Urban Trim & Groom | AI Support System",
+    page_title="Razors-n-scissors | AI Support System",
     page_icon="💈",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -45,7 +45,7 @@ if "messages" not in st.session_state:
     st.session_state.messages = [
         {
             "role": "assistant",
-            "content": "👋 Welcome to **Urban Trim & Groom Barber Salon**! I can help you check prices, find available slots with our master barbers, or book an appointment in seconds. How may I assist you today?",
+            "content": "👋 Welcome to **Razors-n-scissors**! I can help you check prices, find available slots with our master barbers, or book an appointment in seconds. How may I assist you today?",
             "trace": None,
             "engine": "System Greeting"
         }
@@ -56,10 +56,10 @@ if "engine_mode" not in st.session_state:
 # ----------------- SIDEBAR -----------------
 with st.sidebar:
     st.image("https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=400&q=80", use_container_width=True)
-    st.title("💈 Urban Trim & Groom")
+    st.title("💈 Razors-n-scissors")
     st.caption("AI-Powered Customer Support & Operations")
     st.markdown("**Student:** Suman Saha (Reg: 12524973)")
-    st.markdown("**Course:** CSE276 · AI Foundations (Group 13)")
+    st.markdown("**Course:** INT428 · AI Foundations (Group 13)")
     
     st.divider()
     st.subheader("⚙️ AI Engine Settings")
@@ -73,8 +73,8 @@ with st.sidebar:
     st.divider()
     st.markdown("### 📍 Salon Information")
     st.markdown("**Hours:** Mon–Sun: 9:00 AM – 9:00 PM")
-    st.markdown("**Phone:** +91 98765 43210")
-    st.markdown("**Address:** Shop 14, Model Town, Jalandhar")
+    st.markdown("**WhatsApp:** +91 9877175449")
+    st.markdown("**Address:** BH-5, LPU Campus, Phagwara")
 
     if st.button("🔄 Reset Chat Session", use_container_width=True):
         st.session_state.agent.reset_session()
@@ -90,9 +90,9 @@ with st.sidebar:
 
 # ----------------- MAIN TABS -----------------
 tab_customer, tab_owner, tab_ai_lab = st.tabs([
-    "💬 Customer Support (Zero-Download Web)",
+    "💬 Customer Support Chat",
     "📊 Salon Manager & Tablet Portal",
-    "🔬 AI Lab & Comparative Benchmark (CSE276)"
+    "🔬 AI Lab & Comparative Benchmark (INT428)"
 ])
 
 # ================= TAB 1: CUSTOMER CHAT =================
@@ -107,13 +107,13 @@ with tab_customer:
             st.session_state.quick_query = "What services do you offer and what are the rates?"
     with pills_col[1]:
         if st.button("📅 Book Haircut", use_container_width=True):
-            st.session_state.quick_query = "I want to book an appointment for Classic Gentleman Haircut"
+            st.session_state.quick_query = "I want to book an appointment for Hair Cut"
     with pills_col[2]:
         if st.button("⏰ Opening Hours", use_container_width=True):
             st.session_state.quick_query = "What are your opening and closing timings?"
     with pills_col[3]:
-        if st.button("✂️ Master Barbers", use_container_width=True):
-            st.session_state.quick_query = "Who are your master barbers?"
+        if st.button("✨ Salient Features", use_container_width=True):
+            st.session_state.quick_query = "What are the salient features and hygiene standards?"
     with pills_col[4]:
         if st.button("❌ Cancel Booking", use_container_width=True):
             st.session_state.quick_query = "I want to cancel my appointment"
@@ -134,7 +134,7 @@ with tab_customer:
                         st.json(msg["trace"])
 
     # Handle incoming query (from pills or input box)
-    user_input = st.chat_input("Type your message here (e.g. 'Haircut price', 'Book Vikram tomorrow at 4pm')...")
+    user_input = st.chat_input("Type your message here (e.g. 'Haircut price', 'Book haircut tomorrow at 4pm')...")
     
     if "quick_query" in st.session_state and st.session_state.quick_query:
         user_input = st.session_state.quick_query
@@ -250,7 +250,7 @@ with tab_owner:
 
 # ================= TAB 3: AI LAB & EVALUATION =================
 with tab_ai_lab:
-    st.markdown("### 🔬 AI Lab & Comparative Evaluation (CSE276 Course Assessment)")
+    st.markdown("### 🔬 AI Lab & Comparative Evaluation (INT428 Course Assessment)")
     st.caption("Demonstrating empirical superiority, explainability, and Responsible AI compliance.")
 
     col_btn, col_info = st.columns([1, 3])
@@ -345,7 +345,7 @@ with tab_ai_lab:
     ]
     st.dataframe(display_details, use_container_width=True)
 
-    # Conversation Audit Trail (CSE276 Rubric Requirement 7)
+    # Conversation Audit Trail (INT428 Rubric Requirement 7)
     st.divider()
     st.markdown("#### 📜 Live Conversation Audit & PII-Redacted Logs")
     logs = get_chat_logs(20)
