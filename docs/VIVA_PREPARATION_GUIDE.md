@@ -1,4 +1,4 @@
-# CSE276 Artificial Intelligence Foundations — Viva Voce Preparation Guide
+# INT428 Artificial Intelligence Foundations — Viva Voce Preparation Guide
 **Project Title:** Customer Support Chatbot for a Real Small Business (Salon / Barber Shop)  
 **Student Name:** Suman Saha  
 **Registration Number:** 12524973  

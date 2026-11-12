@@ -1,12 +1,12 @@
-# 💈 Urban Trim & Groom Barber Salon — Intelligent Customer Support System
+# 💈 Razors-n-scissors — Intelligent Customer Support Chatbot
 
-[![Course](https://img.shields.io/badge/Course-CSE276%20AI%20Foundations-blue.svg)](https://www.lpu.in)
+[![Course](https://img.shields.io/badge/Course-INT428%20AI%20Foundations-blue.svg)](https://www.lpu.in)
 [![Group](https://img.shields.io/badge/Group-13-green.svg)]()
 [![Student](https://img.shields.io/badge/Student-Suman%20Saha%20(12524973)-orange.svg)]()
 [![Python](https://img.shields.io/badge/Python-3.12-yellow.svg)]()
 [![Zero-Cost](https://img.shields.io/badge/Cost-%E2%82%B90.00%20(100%25%20Free)-success.svg)]()
 
-> Continuous Assessment (CA) Project for **CSE276: Artificial Intelligence Foundations** (Lovely Professional University).  
+> Continuous Assessment (CA) Project for **INT428: Artificial Intelligence Foundations** (Lovely Professional University).  
 > **Allocated Topic (Group 13):** *Customer Support Chatbot for a Real Small Business (Salon / Barber Shop)*
 
 ---
@@ -17,8 +17,8 @@ Small service businesses like barber shops receive dozens of phone calls daily d
 This project delivers a complete, production-ready, zero-cost AI customer support and operational workflow for **Urban Trim & Groom Barber Salon** (Shop 14, Main Market, Model Town, Jalandhar).
 
 ### Key Highlights
-* **Zero Customer Friction:** Customers do NOT download any new app. They access support via **Channel 1 (Mobile Web / QR scan)** or **Channel 2 (Telegram Bot)**.
-* **Dual AI Implementation (CSE276 Mandate):** Implements and empirically benchmarks **Approach 1 (Classical Rule-Based FSM)** vs **Approach 2 (Dense Sentence-Transformers Semantic Retrieval)** vs **Proposed Hybrid Architecture**.
+* **Zero Customer Friction:** Customers do NOT download any new app. They access support via **Channel 1 (Telegram Bot)** or **Channel 2 (WhatsApp Business)**.
+* **Dual AI Implementation (INT428 Mandate):** Implements and empirically benchmarks **Approach 1 (Classical Rule-Based FSM)** vs **Approach 2 (Dense Sentence-Transformers Semantic Retrieval)** vs **Proposed Hybrid Architecture**.
 * **Zero Hallucination Guarantee:** 100% grounded in a local SQLite relational database (`salon.db`) and verified JSON knowledge base.
 * **Explainability (XAI):** Real-time reasoning traces displaying intent confidence, fired rules, matched vector distances, and executed SQL queries.
 * **Responsible AI:** Strict PII redaction (DPDP Act) and ethical boundary filters (refusal of medical scalp diagnoses).
@@ -30,15 +30,15 @@ This project delivers a complete, production-ready, zero-cost AI customer suppor
 ```mermaid
 flowchart TD
     subgraph Customer_Touchpoints["Customer Touchpoints (Zero App Download)"]
-        WEB["📱 Channel 1: Mobile Web / QR Scan<br/>(Streamlit Customer Portal)"]
-        TG["💬 Channel 2: Telegram Messenger<br/>(@UrbanTrimSalonBot)"]
+        TG["💬 Channel 1: Telegram Bot<br/>(@RazorsNScissorsBot)"]
+        WH["💬 Channel 2: WhatsApp Business<br/>(+91 9877175449)"]
     end
 
     subgraph Salon_Staff["Staff Touchpoint"]
         DASH["🖥️ Channel 3: Counter Tablet Portal<br/>(Live Schedule, Complaints, Handover)"]
     end
 
-    subgraph AI_Engine["Intelligent Agent Core (CSE276)"]
+    subgraph AI_Engine["Intelligent Agent Core (INT428)"]
         GUARD["🛡️ Responsible AI Layer<br/>• PII Redactor (DPDP Act)<br/>• Medical Scope Refusal<br/>• Prompt Injection Filter"]
         ROUTER{"AI Router"}
         
@@ -52,8 +52,8 @@ flowchart TD
         KB[("📚 Knowledge Base (JSON)<br/>• Service Catalog & Policies")]
     end
 
-    WEB --> GUARD
     TG --> GUARD
+    WH --> GUARD
     GUARD --> ROUTER
     ROUTER -->|Transactional Intents| APP1
     ROUTER -->|Informational & FAQs| APP2
@@ -61,7 +61,7 @@ flowchart TD
     APP2 <--> KB
     APP1 --> XAI
     APP2 --> XAI
-    XAI --> WEB
+    XAI --> TG
     XAI --> TG
     DB <--> DASH
 ```
@@ -108,7 +108,17 @@ To run the bot on Telegram:
 python -m app.telegram_bot <YOUR_TELEGRAM_BOT_TOKEN>
 ```
 
-### 5. Running the Comparative Benchmark Standalone
+### 5. Running the WhatsApp Bot (Channel 2 – Twilio)
+1. Sign up at [twilio.com](https://www.twilio.com) and activate the **WhatsApp Sandbox**.
+2. Set your environment variables (`TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_WHATSAPP_FROM`).
+3. Run the webhook server:
+```bash
+uvicorn app.whatsapp_bot:app --host 0.0.0.0 --port 8000
+```
+4. Expose it publicly with [ngrok](https://ngrok.com): `ngrok http 8000`
+5. Set the Twilio Sandbox webhook URL to: `https://<ngrok-id>.ngrok.io/whatsapp/webhook`
+
+### 6. Running the Comparative Benchmark Standalone
 To execute the automated evaluation test suite:
 ```bash
 python -m benchmark.evaluate
@@ -121,7 +131,9 @@ python -m benchmark.evaluate
 Salon AI/
 ├── app/
 │   ├── app.py                 # Streamlit Multi-Tab Web Application
-│   └── telegram_bot.py        # Channel 2 Telegram Bot Gateway
+│   ├── telegram_bot.py        # Channel 1 Telegram Bot Gateway
+│   ├── whatsapp_bot.py        # Channel 2 WhatsApp Bot (Twilio Webhook)
+│   └── config.py              # Salon configuration constants
 ├── engine/
 │   ├── guardrails.py          # PII Redaction & Responsible AI Filters
 │   ├── rule_engine.py         # Approach 1: Classical Regex & FSM Slot-Filler
@@ -138,7 +150,7 @@ Salon AI/
 │   ├── evaluate.py            # Automated Comparison Benchmark Runner
 │   └── benchmark_results.json # Saved Empirical Metric Results
 ├── docs/
-│   ├── CSE276_PROJECT_REPORT.md # Academic Project Report (All 9 Rubric Components)
+│   ├── INT428_PROJECT_REPORT.md # Academic Project Report (All 9 Rubric Components)
 │   └── VIVA_PREPARATION_GUIDE.md# 30+ Anticipated Faculty Viva Q&A Guide
 ├── requirements.txt           # Python Dependencies
 └── README.md                  # System Documentation
@@ -158,5 +170,5 @@ Salon AI/
 * **Registration No:** 12524973
 * **Section:** K4P25CB
 * **Group:** Group 13
-* **Course:** CSE276 — Artificial Intelligence Foundations
+* **Course:** INT 428 — Artificial Intelligence Foundations
 * **Institution:** Lovely Professional University

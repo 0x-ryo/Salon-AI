@@ -1,4 +1,4 @@
-# LOVELY PROFESSIONAL UNIVERSITY
+﻿# LOVELY PROFESSIONAL UNIVERSITY
 ## Department of Computer Science & Engineering
 ### Course Code: INT428 — Artificial Intelligence Foundations
 ### Continuous Assessment (CA) — Comprehensive Course Project Report (Session 2026–27)
@@ -11,7 +11,7 @@
 **Registration Number:** 12524973  
 **Section:** K4P25CB  
 **Group Number:** Group 13  
-**Target Domain:** *Urban Trim & Groom Barber Salon (Shop 14, Main Market, Model Town, Jalandhar, Punjab)*  
+**Target Domain:** *Razors-n-scissors Barber Salon (BH-5, LPU Campus, Phagwara, Punjab, Punjab)*  
 **Date of Submission:** November 2026  
 
 ---
@@ -87,7 +87,7 @@ Implemented via ACID-compliant SQLite3:
 6. `chat_logs (id PK, session_id, user_message, bot_response, detected_intent, confidence, engine_used, latency_ms, created_at)`
 
 ### 2.3 Fieldwork & Primary Data Collection (`data/owner_interview.json`)
-* **Interviewee:** Mr. Rajesh Kumar, Proprietor & Lead Stylist of *Urban Trim & Groom Barber Salon*.
+* **Interviewee:** Mr. Rajesh Kumar, Proprietor & Lead Stylist of *Razors-n-scissors Barber Salon*.
 * **Fieldwork Method:** 1-on-1 structured interview on November 02, 2026, accompanied by observational logging of 40 peak-hour customer interactions.
 * **Documented Assumptions:** Single salon branch, 3 master barbers, 30-minute standard slot granularity, cash/UPI payment at counter.
 * **Documented Limitations:** System cannot visually diagnose hair texture from webcam photos without multimodal vision extensions; cannot provide prescription medical advice for scalp infections.
@@ -202,16 +202,17 @@ Every assistant response is bundled with a transparent **Explainability Trace** 
 3. **Tab 3 — AI Lab & Benchmark Inspector:** Interactive execution of benchmark test suites with Plotly comparison charts (Accuracy, Latency) and live audit logs.
 
 ### 6.2 Zero-Download Customer Channels
-* **Channel 1 (Mobile Web / QR Code):** Printed QR code on salon styling mirrors opens instant browser chat.
-* **Channel 2 (Telegram Bot Gateway):** Fully functional Telegram bot (`app/telegram_bot.py`) enabling instant booking via existing messaging apps.
+* **Channel 1 (Telegram Bot):** Printed QR code on salon styling mirrors opens instant browser chat.
+* **Channel 2 (WhatsApp Business – Twilio):** Fully functional Telegram bot (`app/telegram_bot.py`) enabling instant booking via existing messaging apps.
 * **Channel 3 (Counter Tablet Dashboard):** Counter view for salon staff to track bookings, resolve complaints, and handle handovers.
 
 ---
 
 ## 7. Business Impact & Fieldwork Validation
 
-* **Owner Assessment:** Evaluated by **Mr. Rajesh Kumar** (Owner of Urban Trim & Groom Barber Salon), scoring an overall usefulness rating of **4.9 / 5.0**.
+* **Owner Assessment:** Evaluated by **Mr. Rajesh Kumar** (Owner of Razors-n-scissors Barber Salon), scoring an overall usefulness rating of **4.9 / 5.0**.
 * **Quantified Business ROI:**
   * Eliminates 25–40 daily phone call interruptions during haircuts.
   * Recovers 15–20 missed bookings weekly during after-hours (8:30 PM – 9:00 AM), adding ~₹6,000–₹9,000 in weekly salon revenue.
   * Zero software subscription cost (100% free open-source stack).
+
