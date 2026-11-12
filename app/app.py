@@ -1,24 +1,29 @@
 """
-Razors-n-scissors Barber Salon - Intelligent Customer Support & Management System
-INT428 Course Project (Group 13 - Suman Saha)
-Features:
-- Tab 1: Salon Owner / Manager Dashboard (Appointments, Complaints, XAI)
-- Tab 2: Salon Owner / Manager Tablet Portal (Appointments, Complaints, Handover Queue)
-- Tab 3: AI Lab & Benchmark Inspector (Approach 1 vs Approach 2 Evaluation & XAI)
+Razors-n-scissors Barber Salon — Owner & Counter Management Portal
+INT428 Course Project (Group 13 - Suman Saha | Reg: 12524973)
+
+Customer Access Channels:
+- Channel 1: WhatsApp Business Bot (Twilio Sandbox Webhook)
+- Channel 2: Telegram Messenger Bot (@RazorsNScissorsBot)
+
+Salon Operations Portal (Internal Counter Staff & Owner Only):
+- Tab 1: Salon Manager & Counter Portal (Appointments, Revenue, Handover Queue, Complaints)
+- Tab 2: INT428 AI Lab & Benchmark Inspector (Approach 1 vs 2 Evaluation & XAI Traces)
 """
 
-import sys
 import os
+import sys
 import json
 import streamlit as st
 import plotly.graph_objects as go
 from datetime import datetime
 
-# Add project root to sys.path
+# Add project root to sys.path so modules resolve cleanly in all environments
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if PROJECT_ROOT not in sys.path:
-    sys.path.append(PROJECT_ROOT)
+    sys.path.insert(0, PROJECT_ROOT)
 
+from config import SALON_NAME, PHONE_WHATSAPP, ADDRESS, OPERATING_HOURS, TAGLINE
 from database.db import (
     init_db, get_all_services, get_all_barbers, get_all_appointments,
     get_all_complaints, resolve_complaint, get_handover_queue, resolve_handover,
@@ -29,7 +34,7 @@ from benchmark.evaluate import run_benchmark, RESULTS_PATH
 
 # Page Configuration
 st.set_page_config(
-    page_title="Razors-n-scissors | AI Support System",
+    page_title=f"{SALON_NAME} | Salon Operations Portal",
     page_icon="💈",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -41,133 +46,47 @@ init_db()
 # Initialize Session State
 if "agent" not in st.session_state:
     st.session_state.agent = HybridSalonAgent()
-if "messages" not in st.session_state:
-    st.session_state.messages = [
-        {
-            "role": "assistant",
-            "content": "👋 Welcome to **Razors-n-scissors**! I can help you check prices, find available slots with our master barbers, or book an appointment in seconds. How may I assist you today?",
-            "trace": None,
-            "engine": "System Greeting"
-        }
-    ]
 if "engine_mode" not in st.session_state:
     st.session_state.engine_mode = "Hybrid (Production Agent)"
 
 # ----------------- SIDEBAR -----------------
 with st.sidebar:
     st.image("https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=400&q=80", use_container_width=True)
-    st.title("💈 Razors-n-scissors")
-    st.caption("AI-Powered Customer Support & Operations")
+    st.title(f"💈 {SALON_NAME}")
+    st.caption("Salon Counter Portal & Operational Command Center")
     st.markdown("**Student:** Suman Saha (Reg: 12524973)")
     st.markdown("**Course:** INT428 · AI Foundations (Group 13)")
     
     st.divider()
-    st.subheader("⚙️ AI Engine Settings")
+    st.markdown("### 📍 Salon Details")
+    st.markdown(f"**Address:** {ADDRESS}")
+    st.markdown(f"**Hours:** {OPERATING_HOURS}")
+    st.markdown(f"**WhatsApp:** {PHONE_WHATSAPP}")
+    st.markdown(f"**Motto:** *{TAGLINE}*")
+
+    st.divider()
+    st.markdown("### 📱 Customer Channels")
+    st.info("Customers interact exclusively via **WhatsApp** and **Telegram**. This web portal is reserved for counter staff & salon management.")
+
+    st.divider()
+    st.subheader("⚙️ AI Engine Diagnostics")
     st.session_state.engine_mode = st.radio(
-        "Active AI Architecture:",
+        "Active Architecture for Testing:",
         ["Hybrid (Production Agent)", "Approach 1 (Rule-Based FSM)", "Approach 2 (Semantic Retrieval)"],
         index=0,
-        help="Select which AI core powers customer interactions."
+        help="Select which AI core powers customer response generation."
     )
-    
-    st.divider()
-    st.markdown("### 📍 Salon Information")
-    st.markdown("**Hours:** Mon–Sun: 9:00 AM – 9:00 PM")
-    st.markdown("**WhatsApp:** +91 9877175449")
-    st.markdown("**Address:** BH-5, LPU Campus, Phagwara")
-
-    if st.button("🔄 Reset Chat Session", use_container_width=True):
-        st.session_state.agent.reset_session()
-        st.session_state.messages = [
-            {
-                "role": "assistant",
-                "content": "Session reset! How can I help you today?",
-                "trace": None,
-                "engine": "System Reset"
-            }
-        ]
-        st.rerun()
 
 # ----------------- MAIN TABS -----------------
-tab_customer, tab_owner, tab_ai_lab = st.tabs([
-    "💬 Customer Support Chat",
-    "📊 Salon Manager & Tablet Portal",
-    "🔬 AI Lab & Comparative Benchmark (INT428)"
+tab_owner, tab_ai_lab = st.tabs([
+    "📊 Salon Manager & Counter Portal",
+    "🔬 INT428 AI Lab & Comparative Benchmark"
 ])
 
-# ================= TAB 1: CUSTOMER CHAT =================
-with tab_customer:
-    st.markdown("### ✂️ Salon Customer Assistant")
-    st.caption("Zero-friction customer chat for quick booking, service queries, and support.")
-
-    # Quick Action Pills
-    pills_col = st.columns(6)
-    with pills_col[0]:
-        if st.button("💈 Services & Rates", use_container_width=True):
-            st.session_state.quick_query = "What services do you offer and what are the rates?"
-    with pills_col[1]:
-        if st.button("📅 Book Haircut", use_container_width=True):
-            st.session_state.quick_query = "I want to book an appointment for Hair Cut"
-    with pills_col[2]:
-        if st.button("⏰ Opening Hours", use_container_width=True):
-            st.session_state.quick_query = "What are your opening and closing timings?"
-    with pills_col[3]:
-        if st.button("✨ Salient Features", use_container_width=True):
-            st.session_state.quick_query = "What are the salient features and hygiene standards?"
-    with pills_col[4]:
-        if st.button("❌ Cancel Booking", use_container_width=True):
-            st.session_state.quick_query = "I want to cancel my appointment"
-    with pills_col[5]:
-        if st.button("🤝 Human Handover", use_container_width=True):
-            st.session_state.quick_query = "Let me speak to the salon manager please"
-
-    # Display Chat History
-    chat_container = st.container()
-    with chat_container:
-        for msg in st.session_state.messages:
-            with st.chat_message(msg["role"], avatar="💈" if msg["role"] == "assistant" else "👤"):
-                st.markdown(msg["content"])
-                
-                # Show Explainability collapsible if trace is available
-                if msg.get("trace"):
-                    with st.expander("🔍 AI Explainability Trace (Why this answer?)", expanded=False):
-                        st.json(msg["trace"])
-
-    # Handle incoming query (from pills or input box)
-    user_input = st.chat_input("Type your message here (e.g. 'Haircut price', 'Book haircut tomorrow at 4pm')...")
-    
-    if "quick_query" in st.session_state and st.session_state.quick_query:
-        user_input = st.session_state.quick_query
-        del st.session_state["quick_query"]
-
-    if user_input:
-        # Add user message
-        st.session_state.messages.append({"role": "user", "content": user_input})
-        
-        # Determine engine mode parameter
-        engine_param = "Hybrid"
-        if "Rule-Based" in st.session_state.engine_mode:
-            engine_param = "Approach 1 (Rule-Based)"
-        elif "Semantic" in st.session_state.engine_mode:
-            engine_param = "Approach 2 (Semantic)"
-
-        # Process with AI
-        ai_output = st.session_state.agent.handle_message(user_input, engine_mode=engine_param)
-
-        # Append assistant message
-        st.session_state.messages.append({
-            "role": "assistant",
-            "content": ai_output["response"],
-            "trace": ai_output["trace"],
-            "engine": ai_output["engine_used"],
-            "latency_ms": ai_output["latency_ms"]
-        })
-        st.rerun()
-
-# ================= TAB 2: SALON MANAGER PORTAL =================
+# ================= TAB 1: SALON MANAGER PORTAL =================
 with tab_owner:
     st.markdown("### 📊 Salon Owner & Counter Tablet Portal")
-    st.caption("Live control center for barbers, appointments, customer grievances, and human escalations.")
+    st.caption(f"Real-time operational overview for {SALON_NAME} (BH-5, LPU Campus).")
 
     # Metric Cards
     all_apps = get_all_appointments()
@@ -184,7 +103,7 @@ with tab_owner:
 
     st.divider()
 
-    # Section 1: Human Handover Escalation Queue
+    # Section 1: Urgent Handover Queue
     st.subheader("🚨 Urgent Customer Handover Requests")
     if pending_handovers:
         for ho in pending_handovers:
@@ -206,7 +125,7 @@ with tab_owner:
 
     st.divider()
 
-    # Section 2: Appointments Calendar & Management
+    # Section 2: Live Appointments Schedule
     st.subheader("📅 Live Appointments Schedule")
     if all_apps:
         display_apps = [
@@ -215,7 +134,6 @@ with tab_owner:
                 "Client": a["customer_name"],
                 "Phone": a["phone"],
                 "Service": a["service_name"],
-                "Barber": a["barber_name"],
                 "Date": a["appointment_date"],
                 "Time": a["start_time"],
                 "Amount (₹)": int(a["price_inr"]),
@@ -229,7 +147,7 @@ with tab_owner:
 
     st.divider()
 
-    # Section 3: Customer Complaints Desk
+    # Section 3: Customer Feedback & Grievances Desk
     st.subheader("⚠️ Customer Feedback & Complaints Desk")
     complaints = get_all_complaints()
     if complaints:
@@ -248,10 +166,28 @@ with tab_owner:
     else:
         st.info("No complaints lodged yet.")
 
-# ================= TAB 3: AI LAB & EVALUATION =================
+    st.divider()
+
+    # Section 4: Live Service & Pricing Catalogue
+    st.subheader("💈 Official Salon Rate Card (16 Services)")
+    services = get_all_services()
+    if services:
+        svc_display = [
+            {
+                "Code": s["id"],
+                "Category": s["category"],
+                "Service Name": s["name"],
+                "Duration (mins)": s["duration_minutes"],
+                "Rate (INR)": f"₹{int(s['price_inr'])}"
+            }
+            for s in services
+        ]
+        st.dataframe(svc_display, use_container_width=True)
+
+# ================= TAB 2: AI LAB & BENCHMARK =================
 with tab_ai_lab:
-    st.markdown("### 🔬 AI Lab & Comparative Evaluation (INT428 Course Assessment)")
-    st.caption("Demonstrating empirical superiority, explainability, and Responsible AI compliance.")
+    st.markdown("### 🔬 INT428 AI Lab & Comparative Evaluation")
+    st.caption("Empirical benchmark across 30 test cases comparing Approach 1 (Rule-Based), Approach 2 (Semantic), and Hybrid.")
 
     col_btn, col_info = st.columns([1, 3])
     with col_btn:
@@ -321,35 +257,34 @@ with tab_ai_lab:
                 y=lat_values,
                 text=[f"{v} ms" for v in lat_values],
                 textposition='auto',
-                marker_color=['#AB63FA', '#FFA15A', '#19D3F3']
+                marker_color=['#636EFA', '#EF553B', '#00CC96']
             )
         ])
-        fig_lat.update_layout(margin=dict(l=20, r=20, t=30, b=20))
+        fig_lat.update_layout(yaxis=dict(range=[0, max(lat_values) * 1.3]), margin=dict(l=20, r=20, t=30, b=20))
         st.plotly_chart(fig_lat, use_container_width=True)
 
-    # Detailed Benchmark Breakdown Table
-    st.markdown("#### 📋 Detailed Benchmark Query Log & Decisions")
-    details = bench_data["detailed_results"]
-    display_details = [
-        {
-            "ID": d["id"],
-            "Category": d["category"],
-            "User Query": d["query"],
-            "Rule Intent": d["rule_intent"],
-            "Rule Match?": "✅" if d["rule_success"] else "❌",
-            "Sem Confidence": f"{d['sem_confidence']:.2f}",
-            "Sem Match?": "✅" if d["sem_success"] else "❌",
-            "Hybrid Intent": d["hyb_intent"]
-        }
-        for d in details
-    ]
-    st.dataframe(display_details, use_container_width=True)
-
-    # Conversation Audit Trail (INT428 Rubric Requirement 7)
     st.divider()
-    st.markdown("#### 📜 Live Conversation Audit & PII-Redacted Logs")
-    logs = get_chat_logs(20)
-    if logs:
-        st.dataframe(logs, use_container_width=True)
-    else:
-        st.caption("No chat audit logs yet. Start chatting in Tab 1!")
+
+    # Interactive AI Query & Explainability Trace Inspector
+    st.subheader("🔍 Interactive AI Explainability (XAI) Inspector")
+    st.caption("Test how the AI processes any customer input and inspect the real-time reasoning trace.")
+
+    sample_query = st.text_input(
+        "Enter test customer query:",
+        value="How much does a haircut and beard trim cost?",
+        help="Type any query to inspect intent, confidence, and internal reasoning."
+    )
+
+    if st.button("Inspect AI Decision Trace 🔬", use_container_width=True):
+        ai_output = st.session_state.agent.handle_message(sample_query, engine_mode="Hybrid")
+        
+        st.markdown(f"**Bot Response:**")
+        st.info(ai_output["response"])
+        
+        col_m1, col_m2, col_m3 = st.columns(3)
+        col_m1.metric("Engine Used", ai_output["engine_used"])
+        col_m2.metric("Detected Intent", ai_output["intent"])
+        col_m3.metric("Latency", f"{ai_output['latency_ms']} ms")
+        
+        st.markdown("**Explainability Trace (JSON):**")
+        st.json(ai_output["trace"])

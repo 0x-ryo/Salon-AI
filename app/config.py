@@ -1,9 +1,9 @@
-# Salon AI – real salon configuration
-# Update PHONE_WHATSAPP / PHONE_TELEGRAM with the actual number before going live
+# Re-export from root config to maintain backward compatibility
+import sys
+import os
 
-SALON_NAME = "Razors-n-scissors"
-PHONE_WHATSAPP = "+91 9877175449"   # real owner number from sign board
-PHONE_TELEGRAM = "+91 9877175449"
-ADDRESS = "BH-5, Lovely Professional University Campus, Phagwara"
-OPERATING_HOURS = "Mon–Sun: 9:00 AM – 9:00 PM"
-TAGLINE = "Groom yourself at Razors-n-scissors"
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+from config import *

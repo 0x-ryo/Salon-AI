@@ -15,7 +15,7 @@ from database.db import (
     book_appointment, cancel_appointment_by_phone, get_appointments_by_phone,
     log_complaint, add_to_handover_queue
 )
-from app.config import SALON_NAME, PHONE_WHATSAPP, ADDRESS, OPERATING_HOURS
+from config import SALON_NAME, PHONE_WHATSAPP, ADDRESS, OPERATING_HOURS
 
 # Intent Regular Expression Catalog
 INTENT_PATTERNS = {
