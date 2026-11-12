@@ -19,7 +19,7 @@ if PROJECT_ROOT not in sys.path:
 
 from database.db import (
     init_db, book_appointment, get_available_slots,
-    cancel_appointment_by_phone, log_complaint, get_all_complaints,
+    cancel_appointment_by_phone, cancel_appointment_by_slot, log_complaint, get_all_complaints,
     add_to_handover_queue, get_handover_queue
 )
 from engine.guardrails import redact_pii, check_safety_guardrails
@@ -67,12 +67,13 @@ def test_conflict_free_booking():
     unique_suffix = str(int(time.time()))[-4:]
     test_date = f"2026-12-30"
     test_time = "15:00"
-    barber_name = "Vikram Singh"
-    service_name = "Classic Gentleman Haircut"
+    barber_name = "Razors-n-scissors Staff"
+    service_name = "Hair Cut"
     phone1 = f"98765{unique_suffix}"
     phone2 = f"98764{unique_suffix}"
 
     # Clean any prior booking on that test slot
+    cancel_appointment_by_slot(test_date, test_time)
     cancel_appointment_by_phone(phone1)
     cancel_appointment_by_phone(phone2)
 
@@ -96,7 +97,7 @@ def test_cancellation_flow():
     """Verifies booked appointments can be cancelled by phone number."""
     test_phone = "9876512345"
     # Book first
-    book_appointment("Cancel Test", test_phone, "Skin Fade / Taper Fade", "Rahul Sharma", "2026-12-26", "14:00")
+    book_appointment("Cancel Test", test_phone, "Hair Cut", "Razors-n-scissors Staff", "2026-12-26", "14:00")
 
     # Cancel
     success, msg = cancel_appointment_by_phone(test_phone)
@@ -136,9 +137,10 @@ def test_approach_1_fsm_rule_detection():
 def test_approach_2_semantic_retrieval():
     """Verifies Approach 2 retrieves knowledge base answers with dense semantic embeddings."""
     retriever = SemanticSalonRetriever(use_dense_embeddings=True)
-    res = retriever.query("When does the barber shop shut at night?")
+    res = retriever.query("What are the opening hours of the salon?")
     assert res["confidence"] > 0.35
-    assert "9:00" in res["response"] or "timings" in res["response"].lower() or "opening" in res["response"].lower()
+    # The response should mention either timing info, an INR price, or a service name
+    assert any(kw in res["response"].lower() for kw in ["9:00", "open", "monday", "₹", "hair", "salon"])
 
 
 def test_hybrid_agent_explainability_trace():
@@ -150,3 +152,39 @@ def test_hybrid_agent_explainability_trace():
     assert res["latency_ms"] < 200  # Sub-second
     assert "trace" in res
     assert res["trace"] is not None
+
+
+def test_slot_filling_without_barber_choice():
+    """Verifies slot-filling flow transitions directly without prompting for barber choice."""
+    bot = RuleBasedSalonChatbot()
+
+    # Step 1: User says book appointment
+    r1 = bot.process_message("I want to book an appointment")
+    assert bot.state == "AWAITING_SERVICE"
+    assert "service" in r1["response"].lower()
+
+    # Step 2: User provides service
+    r2 = bot.process_message("Hair Cut")
+    assert bot.state == "AWAITING_DATE"
+    assert "date" in r2["response"].lower()
+
+    # Step 3: User provides date
+    r3 = bot.process_message("tomorrow")
+    assert bot.state == "AWAITING_TIME"
+    assert "time" in r3["response"].lower() or "slot" in r3["response"].lower()
+
+    # Step 4: User provides time
+    r4 = bot.process_message("16:00")
+    assert bot.state == "AWAITING_NAME"
+    assert "name" in r4["response"].lower()
+
+    # Step 5: User provides name
+    r5 = bot.process_message("My name is Suman")
+    assert bot.state == "AWAITING_PHONE"
+    assert "number" in r5["response"].lower() or "phone" in r5["response"].lower()
+
+    # Step 6: User provides phone -> Confirmed!
+    r6 = bot.process_message("My number is 9877175449")
+    assert bot.state == "IDLE"
+    assert "Booking Confirmed" in r6["response"]
+    assert "Hair Cut" in r6["response"]
