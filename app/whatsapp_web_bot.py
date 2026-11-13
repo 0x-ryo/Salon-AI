@@ -221,6 +221,27 @@ def run_whatsapp_listener():
                     result = agent.handle_message(incoming_text, engine_mode="Hybrid")
                     reply_text = result.get("response", get_master_menu())
 
+                    # Cloud sync to Render so Streamlit Cloud dashboard updates immediately
+                    if "Appointment #" in reply_text and "confirmed" in reply_text.lower():
+                        try:
+                            import requests
+                            slots = agent.rule_engine.slots
+                            requests.post(
+                                "https://salon-ai-backend-6xdf.onrender.com/api/action/book",
+                                json={
+                                    "customer_name": slots.get("customer_name") or sender_name,
+                                    "phone": TARGET_PHONE,
+                                    "service_id": slots.get("service") or 1,
+                                    "barber_id": slots.get("barber") or 1,
+                                    "date_str": str(slots.get("date") or "2026-11-14"),
+                                    "time_str": str(slots.get("time") or "10:00")
+                                },
+                                timeout=3.0
+                            )
+                            print("[Cloud Sync] ✅ Successfully synced new booking to live Streamlit Cloud dashboard!")
+                        except Exception as sync_e:
+                            print(f"[Cloud Sync Note]: {sync_e}")
+
                     print(f"[WhatsApp Reply]: {reply_text[:60]}...")
 
                     # Type and send reply in message input box

@@ -1,5 +1,5 @@
-# CSE276 Course Project Presentation: Urban Trim & Groom Barber Salon AI
-**Course:** CSE276 Artificial Intelligence Foundations  
+# INT428 Course Project Presentation: Urban Trim & Groom Barber Salon AI
+**Course:** INT428 Artificial Intelligence Foundations  
 **Topic:** Customer Support Chatbot for a Real Small Business (Project 13)  
 **Presenter:** Suman Saha (Reg: 12524973, Group 13)  
 **Institution:** Lovely Professional University  
@@ -8,7 +8,7 @@
 
 ## Slide 1: Title & Project Scope
 * **Project Title:** Customer Support & Operations Chatbot for Urban Trim & Groom Barber Salon
-* **Course:** CSE276 · Artificial Intelligence Foundations (CA Project)
+* **Course:** INT428 · Artificial Intelligence Foundations (CA Project)
 * **Student:** Suman Saha (Solo Execution, Group 13)
 * **Real-World Small Business:** Urban Trim & Groom Barber Salon (Model Town, Jalandhar)
 * **Key Innovation:** Zero customer app download (Mobile Web / QR & Telegram) + Dual AI Engine (Classical Rule-Based FSM vs Dense Vector Retrieval).
@@ -39,7 +39,7 @@
 
 ---
 
-## Slide 4: Dual AI Implementation (CSE276 Core Requirement)
+## Slide 4: Dual AI Implementation (INT428 Core Requirement)
 * **Approach 1 (Classical AI — Unit II):**
   * Deterministic Pattern-Matching (Regex + Lexical Tokenizer).
   * Finite State Machine (FSM) slot-filling dialog manager.
@@ -87,4 +87,4 @@
 ## Slide 8: Business Impact & Conclusion
 * **Owner Rating:** **4.9 / 5.0** overall usefulness score from Mr. Rajesh Kumar.
 * **Economics:** Saves ₹12,000–₹18,000/month in receptionist costs; captures ₹6,000–₹9,000 in missed after-hours bookings.
-* **Academic Takeaway:** Fully satisfies CSE276 syllabus across classical search, intelligent agents, semantic representation, comparative evaluation, and Responsible AI.
+* **Academic Takeaway:** Fully satisfies INT428 syllabus across classical search, intelligent agents, semantic representation, comparative evaluation, and Responsible AI.

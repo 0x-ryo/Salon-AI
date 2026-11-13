@@ -1,4 +1,4 @@
-# CSE276 Course Project — Small Business Owner Assessment & Evaluation Form
+# INT428 Course Project — Small Business Owner Assessment & Evaluation Form
 ### Project 13: Customer Support Chatbot for a Real Small Business
 
 ---

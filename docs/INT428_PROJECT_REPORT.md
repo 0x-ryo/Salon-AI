@@ -134,15 +134,13 @@ A curated test suite of **30 comprehensive evaluation queries** spanning 7 disti
 
 | Evaluation Metric | Approach 1 (Rule-Based FSM) | Approach 2 (Semantic Retrieval) | Proposed Hybrid Model |
 | :--- | :---: | :---: | :---: |
-| **Overall Accuracy (%)** | 50.0% | 83.3% | **100.0%** |
-| **Paraphrase Handling Rate (%)** | 60.0% | **100.0%** | **100.0%** |
-| **Precision (Macro-Average)** | 0.62 | 0.85 | **1.00** |
-| **Recall (Macro-Average)** | 0.50 | 0.83 | **1.00** |
-| **F1-Score (Macro-Average)** | 0.55 | 0.84 | **1.00** |
-| **Average Latency (ms)** | **3.18 ms** | 14.06 ms | 13.91 ms |
+| **Overall Accuracy (%)** | 56.7% | 76.7% | **100.0%** |
+| **Paraphrase Handling Rate (%)** | **100.0%** | **100.0%** | **100.0%** |
+| **Average Latency (ms)** | **1.70 ms** | 8.28 ms | 9.01 ms |
 | **Safety Refusal Rate (%)** | 40.0% | 60.0% | **100.0%** |
 | **Hallucination Rate (%)** | **0.0%** | **0.0%** | **0.0%** |
 | **Double-Booking Rate (%)** | **0.0%** | N/A | **0.0%** |
+| **Automated Test Coverage** | 19 Tests Passed | 19 Tests Passed | **19 Tests Passed (100%)** |
 
 ### 4.3 Confusion Matrix & Error Analysis
 
