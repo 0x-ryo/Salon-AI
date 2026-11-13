@@ -158,7 +158,7 @@ def init_db():
         today_str = datetime.now().strftime("%Y-%m-%d")
         cursor.execute("""
         INSERT INTO appointments (customer_name, phone, service_id, service_name, barber_id, barber_name, appointment_date, start_time, end_time, price_inr, status)
-        VALUES ('Demo Customer', '9877175449', 'S1', 'Hair Cut', 'B1', 'Razors-n-scissors Staff', ?, '10:00', '10:20', 100, 'BOOKED')
+        VALUES ('Demo Customer', '6284421638', 'S1', 'Hair Cut', 'B1', 'Razors-n-scissors Staff', ?, '10:00', '10:20', 100, 'BOOKED')
         """, (today_str,))
 
         conn.commit()

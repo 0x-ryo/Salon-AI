@@ -2,8 +2,8 @@
 # INT428 Project 13 (Group 13 - Suman Saha)
 
 SALON_NAME = "Razors-n-scissors"
-PHONE_WHATSAPP = "+91 9877175449"   # Owner contact number from signboard
-PHONE_TELEGRAM = "+91 9877175449"
+PHONE_WHATSAPP = "+91 6284421638"   # Owner contact number from signboard
+PHONE_TELEGRAM = "+91 6284421638"
 ADDRESS = "BH-5, Lovely Professional University Campus, Phagwara, Punjab"
 OPERATING_HOURS = "Mon–Sun: 9:00 AM – 9:00 PM"
 TAGLINE = "Groom yourself at Razors-n-scissors"

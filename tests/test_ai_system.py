@@ -188,7 +188,7 @@ def test_slot_filling_without_barber_choice():
     assert "number" in r5["response"].lower() or "phone" in r5["response"].lower()
 
     # Step 6: User provides phone -> Confirmed!
-    r6 = bot.process_message("My number is 9877175449")
+    r6 = bot.process_message("My number is 6284421638")
     assert bot.state == "IDLE"
     assert "Booking Confirmed" in r6["response"]
     assert "Hair Cut" in r6["response"]

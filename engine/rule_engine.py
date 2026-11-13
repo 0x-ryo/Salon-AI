@@ -22,7 +22,7 @@ except Exception:
         from app.salon_config import SALON_NAME, PHONE_WHATSAPP, ADDRESS, OPERATING_HOURS
     except Exception:
         SALON_NAME = "Razors-n-scissors"
-        PHONE_WHATSAPP = "+91 9877175449"
+        PHONE_WHATSAPP = "+91 6284421638"
         ADDRESS = "BH-5, Lovely Professional University Campus, Phagwara, Punjab"
         OPERATING_HOURS = "Mon–Sun: 9:00 AM – 9:00 PM"
 
@@ -399,7 +399,7 @@ class RuleBasedSalonChatbot:
         elif intent == "cancel_appointment":
             phone = self.slots.get("phone")
             if not phone:
-                response_text = "To cancel your appointment, please provide your 10-digit registered phone number (e.g., 'Cancel booking for 9877175449')."
+                response_text = "To cancel your appointment, please provide your 10-digit registered phone number (e.g., 'Cancel booking for 6284421638')."
                 self.state = "AWAITING_CANCEL_PHONE"
             else:
                 success, msg = cancel_appointment_by_phone(phone)

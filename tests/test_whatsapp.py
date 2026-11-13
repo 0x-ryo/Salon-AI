@@ -42,7 +42,7 @@ def test_whatsapp_twiml_builder():
 
 def test_clean_phone_utility():
     """Verifies 10-digit phone extraction from Twilio from header."""
-    assert _clean_phone("whatsapp:+919877175449") == "9877175449"
+    assert _clean_phone("whatsapp:+916284421638") == "6284421638"
     assert _clean_phone("+91-9876543210") == "9876543210"
     assert _clean_phone("invalid") == ""
 
@@ -50,7 +50,7 @@ def test_clean_phone_utility():
 def test_whatsapp_webhook_empty_body_greeting():
     """Empty body sends default Razors-n-scissors greeting in Twilio TwiML format."""
     result = handle_whatsapp_message(
-        from_user="whatsapp:+919877175449",
+        from_user="whatsapp:+916284421638",
         body_text="",
         profile_name="Suman"
     )
@@ -62,7 +62,7 @@ def test_whatsapp_webhook_empty_body_greeting():
 def test_whatsapp_webhook_pricing_query():
     """Asking for haircut price returns real Razors-n-scissors rate (₹100)."""
     result = handle_whatsapp_message(
-        from_user="whatsapp:+919877175449",
+        from_user="whatsapp:+916284421638",
         body_text="How much does a haircut cost?",
         profile_name="Suman"
     )
@@ -73,7 +73,7 @@ def test_whatsapp_webhook_pricing_query():
 def test_whatsapp_webhook_medical_safety_guardrail():
     """Ensures clinical/medical queries are refused safely over WhatsApp."""
     result = handle_whatsapp_message(
-        from_user="whatsapp:+919877175449",
+        from_user="whatsapp:+916284421638",
         body_text="My scalp has severe red pus and infection, prescribe an antibiotic ointment.",
         profile_name="Student"
     )

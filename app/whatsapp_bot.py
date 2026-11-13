@@ -35,7 +35,7 @@ except Exception:
         from app.salon_config import SALON_NAME, PHONE_WHATSAPP, ADDRESS
     except Exception:
         SALON_NAME = "Razors-n-scissors"
-        PHONE_WHATSAPP = "+91 9877175449"
+        PHONE_WHATSAPP = "+91 6284421638"
         ADDRESS = "BH-5, Lovely Professional University Campus, Phagwara, Punjab"
 
 app = FastAPI(title="Razors-n-scissors WhatsApp Bot (Twilio Sandbox)")
@@ -81,7 +81,7 @@ def _build_twiml(message: str) -> str:
 
 
 def _clean_phone(from_str: str) -> str:
-    """Extracts a 10-digit phone number from Twilio From format (whatsapp:+919877175449)."""
+    """Extracts a 10-digit phone number from Twilio From format (whatsapp:+916284421638)."""
     match = re.search(r"([6789]\d{9})\b", from_str)
     return match.group(1) if match else ""
 
@@ -147,12 +147,12 @@ async def whatsapp_webhook(request: Request):
 
     if "application/json" in content_type:
         data = await request.json()
-        from_user = data.get("From", "+919877175449")
+        from_user = data.get("From", "+916284421638")
         body_text = data.get("Body", "")
         profile_name = data.get("ProfileName", "")
     else:
         form_data = await request.form()
-        from_user = form_data.get("From", "+919877175449")
+        from_user = form_data.get("From", "+916284421638")
         body_text = form_data.get("Body", "")
         profile_name = form_data.get("ProfileName", "")
 

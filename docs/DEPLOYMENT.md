@@ -1,86 +1,67 @@
-# Deployment Guide — Razors-n-scissors AI Chatbot
-**INT428 | Group 13 | Suman Saha**
+# Deployment & Operations Guide — Razors-n-scissors AI Portal
+**Course:** INT428 Artificial Intelligence Essentials · Group 13 · Suman Saha (Reg: 12524973)
 
 ---
 
-## Prerequisites
+## 🌐 Live Cloud Infrastructure
+
+| Component | Host Platform | Access URL | Description |
+| :--- | :--- | :--- | :--- |
+| **Live Operations Dashboard** | Streamlit Community Cloud | [salon-ai-0x-ryo.streamlit.app](https://salon-ai-0x-ryo.streamlit.app/) | Counter operations portal, booking calendar, revenue analytics, and INT428 AI Lab Inspector. |
+| **24/7 Cloud Bot Gateway** | Render Web Service | [salon-ai-backend-6xdf.onrender.com](https://salon-ai-backend-6xdf.onrender.com) | Python FastAPI engine running 24/7 without requiring a laptop to remain on. |
+| **Device Pairing Interface** | Render Cloud Web App | [`/pair` Pairing Screen](https://salon-ai-backend-6xdf.onrender.com/pair) | Real-time multi-device pairing interface with automatic reconnect and QR tab. |
+| **Persistent Storage** | Render PostgreSQL (`salon-db`) | Cloud Relational Database | Secure cloud database preserving multi-device session credentials across server restarts. |
+| **Target Salon WhatsApp** | Official Salon Number | **`+91 6284421638`** | Real WhatsApp Business channel for customer bookings, rate inquiries, and grievances. |
+
+---
+
+## 💻 Local Development & Testing
+
+### 1. Environment Setup
 ```bash
+# Clone the repository
+git clone https://github.com/0x-ryo/Salon-AI.git
+cd Salon-AI
+
+# Install production dependencies
 pip install -r requirements.txt
-# New packages added: fastapi uvicorn twilio
 ```
 
----
-
-## 1. Owner Dashboard (Streamlit)
+### 2. Launch Streamlit Operations Dashboard Locally
 ```bash
 streamlit run app/app.py
 ```
-Opens at http://localhost:8501 — for the salon owner only.
+Opens in your browser at `http://localhost:8501`.
 
----
-
-## 2. Telegram Bot (Channel 1)
-1. Create a bot via [@BotFather](https://t.me/botfather) → `/newbot`
-2. Copy the token and run:
-```bash
-python -m app.telegram_bot <TELEGRAM_BOT_TOKEN>
-```
-
----
-
-## 3. WhatsApp Bot via Twilio (Channel 2)
-
-### 3a. Twilio Sandbox Setup (Free)
-1. Sign up at https://www.twilio.com (free)
-2. Go to **Messaging → Try it out → Send a WhatsApp message**
-3. Note your **Sandbox Number** (e.g. `+1 415 523 8886`)
-4. Have customers join the sandbox by sending the join code to that number
-
-### 3b. Environment Variables
-Set these before running the webhook:
-```
-TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-TWILIO_AUTH_TOKEN=your_auth_token_here
-TWILIO_WHATSAPP_FROM=whatsapp:+14155238886
-```
-
-### 3c. Run the Webhook Server
-```bash
-uvicorn app.whatsapp_bot:app --host 0.0.0.0 --port 8000
-```
-
-### 3d. Expose Publicly with ngrok (for testing)
-```bash
-ngrok http 8000
-# Copy the https URL e.g. https://abc123.ngrok.io
-```
-Set webhook URL in Twilio Console:
-```
-https://abc123.ngrok.io/whatsapp/webhook
-```
-
-### 3e. Always-On Free Hosting (Railway)
-1. Push your code to GitHub
-2. Go to https://railway.app → New Project → Deploy from GitHub
-3. Set the start command: `uvicorn app.whatsapp_bot:app --host 0.0.0.0 --port $PORT`
-4. Add environment variables in Railway dashboard
-5. Copy the Railway public URL and set it as the Twilio webhook
-
----
-
-## 4. Run Tests
+### 3. Run Automated Pytest Test Suite
 ```bash
 python -m pytest tests/ -v
 ```
+Executes all 19 integration tests covering PII redaction, safety guardrails, interval overlap prevention, multi-turn dialog, and hybrid explainability traces.
 
----
-
-## 5. Run Benchmark
+### 4. Run Empirical Comparative Benchmark
 ```bash
 python -m benchmark.evaluate
 ```
+Evaluates Approach 1 (Rule-Based FSM) vs. Approach 2 (Semantic Retrieval) vs. the Hybrid Production Agent against 30 benchmark queries.
 
 ---
 
-## Contact
-Salon WhatsApp: **+91 9877175449**
+## ☁️ Cloud Deployment Configuration
+
+### Render Cloud Web Service (`render.yaml`)
+* **Environment:** Python 3.12 (Native Docker Container)
+* **Build Command:** `pip install -r requirements.txt`
+* **Start Command:** `python -m app.whatsapp_bot`
+* **Health Check Path:** `/health`
+* **Environment Variables:**
+  * `PORT=8000`
+  * `DATABASE_URL`: Connection string to Render PostgreSQL (`salon-db`)
+  * `WA_TARGET_PHONE`: Target salon WhatsApp phone number (`+91 6284421638`)
+
+---
+
+## 📞 Support & Salon Contact
+* **Salon:** Razors-n-scissors Barber Salon (BH-5, LPU Campus, Phagwara, Punjab)
+* **WhatsApp Channel:** `+91 6284421638`
+* **Student Developer:** Suman Saha (12524973, Group 13)

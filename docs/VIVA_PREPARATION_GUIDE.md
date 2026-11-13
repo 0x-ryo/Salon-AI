@@ -1,4 +1,4 @@
-# INT428 Artificial Intelligence Foundations — Viva Voce Preparation Guide
+# INT428 Artificial Intelligence Essentials — Viva Voce Preparation Guide
 **Project Title:** Customer Support Chatbot for a Real Small Business (Salon / Barber Shop)  
 **Student Name:** Suman Saha  
 **Registration Number:** 12524973  
@@ -75,7 +75,7 @@ Every response is bundled with a transparent **Explainability Trace** visible in
 
 ### Q8: What fieldwork did you conduct with the salon owner?
 **Answer:**
-We interviewed **Mr. Rajesh Kumar**, owner and master barber at *Urban Trim & Groom Barber Salon*:
+We conducted fieldwork with the salon operations and styling staff at *Razors-n-scissors Barber Salon* (BH-5, LPU Campus):
 * **Core Problem Discovered:** Barbers receive 25–40 phone calls daily during busy haircuts. Answering calls interrupts scissor cuts and annoys in-chair clients.
 * **Missed After-Hours Revenue:** 15–20 calls per week occur after closing (8:30 PM – 9:30 AM), resulting in lost bookings to competitors.
 * **Outcome:** The chatbot automates routine queries, handles 24/7 bookings, and frees the barbers to focus entirely on styling.

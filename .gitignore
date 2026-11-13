@@ -18,13 +18,11 @@ neonize_session/
 # Local Utilities, Binaries & Automation Scripts with Tokens
 cloudflared.exe
 *.exe
+*.pdf
 commit_and_push.py
 sync_and_push.py
 push_to_github.py
 setup_git_history.py
-generate_submission_doc.py
-generate_pdf_report.py
-*.pdf
 
 # OS Metadata
 .DS_Store

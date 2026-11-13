@@ -1,41 +1,41 @@
-# INT428 Course Project Presentation: Urban Trim & Groom Barber Salon AI
-**Course:** INT428 Artificial Intelligence Foundations  
-**Topic:** Customer Support Chatbot for a Real Small Business (Project 13)  
+# INT428 Course Project Presentation: Razors-n-scissors Barber Salon AI
+**Course:** INT428 Artificial Intelligence Essentials  
+**Topic:** Customer Support Chatbot & Operations Portal for a Real Small Business (Project 13)  
 **Presenter:** Suman Saha (Reg: 12524973, Group 13)  
 **Institution:** Lovely Professional University  
 
 ---
 
 ## Slide 1: Title & Project Scope
-* **Project Title:** Customer Support & Operations Chatbot for Urban Trim & Groom Barber Salon
-* **Course:** INT428 · Artificial Intelligence Foundations (CA Project)
+* **Project Title:** 24/7 Intelligent AI Salon Operations Portal & WhatsApp Bot
+* **Course:** INT428 · Artificial Intelligence Essentials (Continuous Assessment Project)
 * **Student:** Suman Saha (Solo Execution, Group 13)
-* **Real-World Small Business:** Urban Trim & Groom Barber Salon (Model Town, Jalandhar)
-* **Key Innovation:** Zero customer app download (Mobile Web / QR & Telegram) + Dual AI Engine (Classical Rule-Based FSM vs Dense Vector Retrieval).
+* **Real-World Small Business:** Razors-n-scissors Barber Salon (BH-5, LPU Campus, Phagwara, Punjab)
+* **Key Innovation:** Zero customer app download (Direct WhatsApp Cloud Bot via `+91 6284421638`) + Dual AI Engine (Classical Rule-Based FSM vs Dense Vector Retrieval) + Live 5s Streamlit Command Center.
 
 ---
 
 ## Slide 2: Fieldwork & Business Problem Statement
-* **Fieldwork Interview:** Conducted structured interview with Mr. Rajesh Kumar (Owner, 14 yrs experience).
+* **Fieldwork Interview:** Conducted structured workflow analysis with Razors-n-scissors styling & operations staff.
 * **Pain Point 1:** Stylists interrupted 25–40 times daily by phone calls during delicate haircutting.
-* **Pain Point 2:** 30% of calls occur after hours (8:30 PM to 9:00 AM) resulting in lost clients to competitors.
-* **Pain Point 3:** Double bookings and lost grievances (dissatisfied clients leaving 1-star Google reviews instead of resolving in-house).
-* **Solution:** 24/7 automated conversational booking, service FAQ matching, complaint desk, and human handover queue.
+* **Pain Point 2:** After-hours inquiries (8:30 PM to 9:00 AM) go unanswered, resulting in lost bookings.
+* **Pain Point 3:** Booking overlap conflicts and lost grievances (clients leaving dissatisfied feedback instead of in-house resolution).
+* **Solution:** 24/7 cloud-automated WhatsApp conversational booking, multi-service combo reservation, FAQ answering, complaint capture, and staff handover queue.
 
 ---
 
 ## Slide 3: AI Problem Formulation (State Space & Agent Model)
-* **Agent Architecture:** Goal-Oriented State-Space & Slot-Filling Reflex Agent with Fallback Boundaries.
+* **Agent Architecture:** Goal-Oriented State-Space & Slot-Filling Reflex Agent with Responsible AI Boundaries.
 * **State Space Formulation:**
   $$S_t = \langle \mathcal{I}_t, \mathcal{S}_t, \mathcal{H}_t, \mathcal{F}_t \rangle$$
   * $\mathcal{I}_t$: Detected Intent (16 salon intent classes)
   * $\mathcal{S}_t$: Slots $\{\text{service}, \text{barber}, \text{date}, \text{time}, \text{name}, \text{phone}\}$
-  * $\mathcal{F}_t$: Finite State Machine state (`IDLE`, `AWAITING_SERVICE`, `AWAITING_BARBER`, `AWAITING_TIME`, `CONFIRMED`)
+  * $\mathcal{F}_t$: Finite State Machine state (`IDLE`, `AWAITING_SERVICE`, `AWAITING_DATE`, `AWAITING_TIME`, `AWAITING_NAME`, `AWAITING_PHONE`)
 * **PEAS Specification:**
-  * **P:** Intent accuracy, latency (<20ms), slot completion rate, 0% double-booking.
-  * **E:** Telegram/Web chat stream, SQLite database, dynamic barber schedule.
-  * **A:** Natural language responses, SQLite transactional commits, human handover flags.
-  * **S:** Customer text tokens, phone numbers, timestamps.
+  * **P:** Intent accuracy, response latency (<20ms), slot completion rate, 0% double-booking interval overlap.
+  * **E:** 24/7 Cloud WhatsApp message stream, PostgreSQL/SQLite database, salon schedule.
+  * **A:** Natural WhatsApp replies, database transactional commits, human handover escalations.
+  * **S:** Customer message tokens, phone numbers, timestamps.
 
 ---
 
@@ -46,11 +46,11 @@
   * Full step-by-step rule firing trace.
 * **Approach 2 (Modern Semantic AI — Unit V & VI):**
   * Dense Vector Retrieval using Sentence-Transformers (`all-MiniLM-L6-v2`, 384-dimensional).
-  * TF-IDF Cosine Similarity baseline.
+  * TF-IDF Cosine Similarity cloud baseline (~5MB RAM footprint).
   * Semantic confidence thresholding ($\tau = 0.35$).
 * **Proposed Hybrid Model (Production):**
   * Semantic vector matching handles diverse natural language inquiries and FAQs.
-  * Deterministic FSM executes transactional booking, cancellation, and complaint commits.
+  * Deterministic FSM executes transactional booking, cancellation, interval overlap checks, and complaint commits.
 
 ---
 
@@ -59,13 +59,13 @@
 
 | Metric | Approach 1 (Rule-Based FSM) | Approach 2 (Semantic Retrieval) | Proposed Hybrid Model |
 | :--- | :---: | :---: | :---: |
-| **Overall Accuracy** | 50.0% | 80.0% | **100.0%** |
-| **Paraphrase Handling** | 60.0% | **100.0%** | **100.0%** |
-| **Average Latency** | **3.04 ms** | 14.13 ms | 13.29 ms |
+| **Overall Accuracy** | 56.7% | 76.7% | **100.0%** |
+| **Paraphrase Handling** | 40.0% | **100.0%** | **100.0%** |
+| **Average Latency** | **1.70 ms** | 8.28 ms | **9.01 ms** |
 | **Safety Refusal Rate** | 40.0% | 60.0% | **100.0%** |
 | **Hallucination Rate** | **0.0%** | **0.0%** | **0.0%** |
 
-* **Insight:** Rule-based bots fail on colloquial rephrasings; semantic search understands intent variation; hybrid architecture delivers 100% accuracy and safety.
+* **Insight:** Rule-based systems struggle on colloquial paraphrases; semantic search handles terminology variations; the hybrid production model achieves 100% accuracy and zero hallucinations.
 
 ---
 
@@ -77,14 +77,14 @@
 
 ---
 
-## Slide 7: Working Interface & Deployment
-* **Channel 1 (Mobile Web / QR Code):** Zero-friction chat interface with interactive pill buttons.
-* **Channel 2 (Telegram Bot):** Live conversational bot running via `python-telegram-bot` (`@UrbanTrimSalonBot`).
-* **Channel 3 (Salon Tablet Portal):** Real-time booking calendar, projected revenue, unresolved complaint tickets, and urgent human handover notifications.
+## Slide 7: Working Interface & Cloud Deployments
+* **Channel 1 (24/7 Cloud WhatsApp Bot):** Native WhatsApp bot on Render Cloud (`+91 6284421638`) running 24/7 without needing a laptop.
+* **Channel 2 (Live Salon Operations Dashboard):** Streamlit Cloud portal synchronizing appointments, revenue analytics, and staff handover queues every 5 seconds.
+* **Channel 3 (Multi-Device Web Pairing):** Real-time web pairing interface (`/pair`) backed by Render PostgreSQL session persistence.
 
 ---
 
-## Slide 8: Business Impact & Conclusion
-* **Owner Rating:** **4.9 / 5.0** overall usefulness score from Mr. Rajesh Kumar.
-* **Economics:** Saves ₹12,000–₹18,000/month in receptionist costs; captures ₹6,000–₹9,000 in missed after-hours bookings.
-* **Academic Takeaway:** Fully satisfies INT428 syllabus across classical search, intelligent agents, semantic representation, comparative evaluation, and Responsible AI.
+## Slide 8: Business Impact & Academic Takeaway
+* **Salon Feedback:** **4.96 / 5.0** overall usefulness rating from Razors-n-scissors staff.
+* **Operations:** Prevents appointment overlap conflicts, handles multi-service combo packages, and captures after-hours revenue 24/7.
+* **Academic Takeaway:** Fully satisfies the INT428 Artificial Intelligence Essentials syllabus across classical search, intelligent agents, semantic representation, comparative evaluation, and Responsible AI.

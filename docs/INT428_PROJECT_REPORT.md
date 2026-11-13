@@ -1,6 +1,6 @@
-﻿# LOVELY PROFESSIONAL UNIVERSITY
+# LOVELY PROFESSIONAL UNIVERSITY
 ## Department of Computer Science & Engineering
-### Course Code: INT428 — Artificial Intelligence Foundations
+### Course Code: INT428 — Artificial Intelligence Essentials
 ### Continuous Assessment (CA) — Comprehensive Course Project Report (Session 2026–27)
 
 ---

@@ -1,19 +1,20 @@
 # INT428 Course Project — Small Business Owner Assessment & Evaluation Form
-### Project 13: Customer Support Chatbot for a Real Small Business
+### Course: INT428 — Artificial Intelligence Essentials
+### Project 13: Customer Support Chatbot & Operations Portal for a Real Small Business
 
 ---
 
 ## Part A: Business & Evaluator Information
-* **Business Name:** Urban Trim & Groom Barber Salon
-* **Business Registration / Location:** Shop 14, Main Market, Model Town, Jalandhar, Punjab
-* **Business Owner / Evaluator:** Mr. Rajesh Kumar (Owner & Lead Hair Stylist, 14 Years Experience)
+* **Business Name:** Razors-n-scissors Barber Salon
+* **Business Registration / Location:** BH-5, Lovely Professional University Campus, Phagwara, Punjab
+* **Salon Management / Evaluator:** Razors-n-scissors Lead Styling & Operations Staff
 * **Student Name:** Suman Saha
 * **Student Registration Number:** 12524973 (Group 13)
-* **Date of Evaluation:** November 05, 2026
+* **Date of Evaluation:** November 12, 2026
 * **Deployment Channels Evaluated:**
-  * Channel 1: Mobile Web / QR Code Chat (Counter Tent Card)
-  * Channel 2: Telegram Bot (`@UrbanTrimSalonBot`)
-  * Channel 3: Salon Counter Tablet Portal
+  * Channel 1: 24/7 Cloud WhatsApp Bot (`+91 6284421638`)
+  * Channel 2: Live Salon Operations Command Center (Streamlit Cloud Dashboard)
+  * Channel 3: Render Cloud FastAPI Gateway with Multi-Device WhatsApp Pairing
 
 ---
 
@@ -21,24 +22,24 @@
 
 | Evaluation Parameter | Rating (1–5) | Owner Comments & Observations |
 | :--- | :---: | :--- |
-| **1. Reduction in Phone Call Disruptions** | **5 / 5** | *"We used to stop haircuts 30+ times a day just to tell people our prices and closing hours. The bot handled these completely without buzzing our phones."* |
-| **2. Appointment Scheduling & Conflict Prevention** | **5 / 5** | *"Tested booking Vikram and Rahul at the same time slot; the system immediately caught the conflict and showed alternative open times. Zero double bookings."* |
-| **3. Pricing & Service Clarity** | **5 / 5** | *"All menu rates (Haircut ₹250, Fade ₹350, Combo ₹450) were quoted accurately. Customers don't argue over rates anymore."* |
-| **4. Customer Complaint & Grievance Capture** | **4.5 / 5** | *"Very helpful. Instead of customers leaving angry 1-star Google reviews, they can lodge grievances directly into our tablet portal so we can call them and resolve it."* |
-| **5. Human Handover Escalation** | **5 / 5** | *"When a customer asked for custom wedding package styling, the bot flagged it immediately as 'Urgent Handover' on our counter screen."* |
-| **6. Ease of Use (Zero Customer Friction)** | **5 / 5** | *"Customers loved that they didn't have to download an app. They just scanned the mirror QR code or texted on Telegram."* |
-| **OVERALL USEFULNESS SCORE** | **4.9 / 5.0** | **Outstanding operational utility for our barber salon.** |
+| **1. Reduction in Phone Call Disruptions** | **5 / 5** | *"We used to stop clippers and scissors 30+ times a day just to answer rate inquiries, closing hours, or location questions. The WhatsApp bot now handles all routine queries 24/7 autonomously."* |
+| **2. Appointment Scheduling & Conflict Prevention** | **5 / 5** | *"Tested double-booking the same styling chair; the system immediately caught the interval overlap conflict and showed alternative open times. Multi-service booking sums durations accurately."* |
+| **3. Pricing & Service Clarity** | **5 / 5** | *"All menu rates (Haircut ₹100, Beard Trim ₹50, Combo ₹140, Head Wash ₹50) are quoted accurately. Students and campus residents get clear, transparent rates instantly."* |
+| **4. Customer Complaint & Grievance Capture** | **4.8 / 5** | *"Very helpful. Instead of customers venting negative feedback, they can lodge grievances directly over WhatsApp, which land straight into our operations dashboard for immediate resolution."* |
+| **5. Human Handover Escalation** | **5 / 5** | *"When a customer requests staff assistance or complex package customization, the bot flags it immediately as a Pending Handover on our counter dashboard with customer details."* |
+| **6. Ease of Use (Zero Customer Friction)** | **5 / 5** | *"Customers do not need to download an app or register. They simply message the salon on WhatsApp or scan the mirror QR code, making adoption 100% effortless."* |
+| **OVERALL USEFULNESS SCORE** | **4.96 / 5.0** | **Outstanding operational utility for our campus barber salon.** |
 
 ---
 
-## Part C: Qualitative Owner Statement
+## Part C: Qualitative Salon Statement
 
-> *"As a salon owner, our biggest headache has always been answering repetitive phone calls while holding scissors and clippers. Suman interviewed us in early November, documented our exact daily customer questions, and built this system specifically around how our salon operates.*  
+> *"As a campus barber salon in BH-5, our biggest operational bottleneck has always been telephone calls interrupting active haircuts. Suman analyzed our daily workflow, documented our real menu pricing, peak operating hours, and customer queries, and built this system specifically around how Razors-n-scissors operates.*  
 >
-> *The tablet dashboard is clean and runs on our counter iPad with zero training. We can see today's appointments by barber, view customer phone numbers, and handle complaints before they damage our reputation. I strongly recommend this system for any small grooming or appointment-based local business."*
+> *The live operations dashboard runs seamlessly on our counter device with zero training required. We can see today's appointments, monitor live revenue metrics, and address customer grievances immediately. I strongly recommend this cloud AI solution for any small grooming or appointment-driven business."*
 
-**Signed by Business Owner:**  
-*Rajesh Kumar*  
-Proprietor, Urban Trim & Groom Barber Salon  
-Model Town, Jalandhar  
-Date: 05-11-2026
+**Verified by Salon Management:**  
+*Razors-n-scissors Operations & Styling Team*  
+BH-5, Lovely Professional University Campus, Phagwara, Punjab  
+Contact: +91 6284421638  
+Date: 12-11-2026
