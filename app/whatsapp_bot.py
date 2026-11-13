@@ -293,6 +293,25 @@ def api_get_complaints():
         return []
 
 
+@app.post("/api/action/book")
+async def api_book_appointment(request: Request):
+    """Creates a new appointment via REST API."""
+    try:
+        data = await request.json()
+        from database.db import book_appointment
+        success, msg, app_id = book_appointment(
+            customer_name=data.get("customer_name", "Walk-in"),
+            phone=data.get("phone", "916284421638"),
+            service_id=data.get("service_id", 1),
+            barber_id=data.get("barber_id", 1),
+            date_str=data.get("date_str", "2026-11-14"),
+            time_str=data.get("time_str", "10:00")
+        )
+        return {"success": success, "message": msg, "id": app_id}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
 @app.post("/api/action/status")
 async def api_update_status(request: Request):
     """Updates appointment status (e.g. COMPLETED, CANCELLED, BOOKED)."""
