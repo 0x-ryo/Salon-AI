@@ -24,7 +24,7 @@ if PROJECT_ROOT not in sys.path:
 from engine.hybrid_agent import HybridSalonAgent
 from engine.rule_engine import get_master_menu
 from database.db import (
-    get_all_appointments, get_live_metrics, update_appointment_status,
+    init_db, get_all_appointments, get_live_metrics, update_appointment_status,
     resolve_handover, resolve_complaint, get_all_complaints, get_handover_queue
 )
 try:
@@ -38,6 +38,19 @@ except Exception:
         ADDRESS = "BH-5, Lovely Professional University Campus, Phagwara, Punjab"
 
 app = FastAPI(title="Razors-n-scissors WhatsApp Bot (Twilio Sandbox)")
+
+# Ensure SQLite schema and initial salon services are initialized
+try:
+    init_db()
+except Exception as _e:
+    print(f"[DB Init Note]: {_e}")
+
+@app.on_event("startup")
+def startup_event():
+    try:
+        init_db()
+    except Exception as _e:
+        print(f"[DB Startup Note]: {_e}")
 
 # Per-user conversational agent session map: user_key -> HybridSalonAgent
 _user_sessions: dict[str, HybridSalonAgent] = {}
@@ -231,25 +244,53 @@ def health():
 @app.get("/api/appointments")
 def api_get_appointments():
     """Returns all salon appointments for real-time dashboard sync."""
-    return get_all_appointments()
+    try:
+        return get_all_appointments()
+    except Exception as e:
+        try:
+            init_db()
+            return get_all_appointments()
+        except Exception:
+            return []
 
 
 @app.get("/api/metrics")
 def api_get_metrics():
     """Returns real-time KPIs and revenue metrics for salon owner."""
-    return get_live_metrics()
+    try:
+        return get_live_metrics()
+    except Exception as e:
+        try:
+            init_db()
+            return get_live_metrics()
+        except Exception:
+            return {
+                "total_appointments": 0,
+                "today_appointments": 0,
+                "total_revenue": 0,
+                "pending_handovers": 0,
+                "open_complaints": 0,
+                "popular_services": [],
+                "recent_appointments": []
+            }
 
 
 @app.get("/api/handovers")
 def api_get_handovers():
     """Returns pending human staff handovers."""
-    return get_handover_queue()
+    try:
+        return get_handover_queue()
+    except Exception:
+        return []
 
 
 @app.get("/api/complaints")
 def api_get_complaints():
     """Returns customer complaints desk tickets."""
-    return get_all_complaints()
+    try:
+        return get_all_complaints()
+    except Exception:
+        return []
 
 
 @app.post("/api/action/status")
