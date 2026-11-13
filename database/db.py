@@ -16,9 +16,14 @@ KB_PATH = os.path.join(PROJECT_ROOT, "data", "knowledge_base.json")
 
 
 def get_connection():
-    """Returns a SQLite database connection with row factory enabled."""
-    conn = sqlite3.connect(DB_PATH)
+    """Returns a SQLite database connection with row factory enabled and WAL mode."""
+    conn = sqlite3.connect(DB_PATH, timeout=10.0)
     conn.row_factory = sqlite3.Row
+    try:
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA busy_timeout=5000")
+    except Exception:
+        pass
     return conn
 
 
@@ -452,3 +457,61 @@ def get_chat_logs(limit=50):
     rows = cursor.fetchall()
     conn.close()
     return [dict(r) for r in rows]
+
+
+def update_appointment_status(appointment_id: int, new_status: str) -> bool:
+    """Updates the status of an appointment (e.g. COMPLETED, CANCELLED, BOOKED)."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE appointments SET status = ? WHERE id = ?", (new_status.upper(), appointment_id))
+    rows_affected = cursor.rowcount
+    conn.commit()
+    conn.close()
+    return rows_affected > 0
+
+
+def get_live_metrics() -> dict:
+    """Computes real-time KPIs for owner dashboard and API."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    # Active Bookings & Revenue
+    cursor.execute("SELECT COUNT(*), COALESCE(SUM(price_inr), 0) FROM appointments WHERE status = 'BOOKED'")
+    booked_row = cursor.fetchone()
+    active_count = booked_row[0] if booked_row else 0
+    active_revenue = booked_row[1] if booked_row else 0.0
+
+    # Total Completed
+    cursor.execute("SELECT COUNT(*), COALESCE(SUM(price_inr), 0) FROM appointments WHERE status = 'COMPLETED'")
+    comp_row = cursor.fetchone()
+    completed_count = comp_row[0] if comp_row else 0
+    completed_revenue = comp_row[1] if comp_row else 0.0
+
+    # Pending Handovers
+    cursor.execute("SELECT COUNT(*) FROM handover_queue WHERE status = 'PENDING'")
+    pending_handovers = cursor.fetchone()[0]
+
+    # Open Complaints
+    cursor.execute("SELECT COUNT(*) FROM complaints WHERE status = 'OPEN'")
+    open_complaints = cursor.fetchone()[0]
+
+    # Service Popularity
+    cursor.execute("""
+    SELECT service_name, COUNT(*) as cnt 
+    FROM appointments 
+    GROUP BY service_name 
+    ORDER BY cnt DESC LIMIT 5
+    """)
+    top_services = [{"service": r[0], "count": r[1]} for r in cursor.fetchall()]
+
+    conn.close()
+    return {
+        "active_bookings": active_count,
+        "active_revenue_inr": active_revenue,
+        "completed_bookings": completed_count,
+        "completed_revenue_inr": completed_revenue,
+        "total_revenue_inr": active_revenue + completed_revenue,
+        "pending_handovers": pending_handovers,
+        "open_complaints": open_complaints,
+        "top_services": top_services
+    }

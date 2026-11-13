@@ -13,14 +13,20 @@ Handles inbound WhatsApp messages from Twilio WhatsApp Sandbox:
 import os
 import sys
 import re
+import httpx
 from fastapi import FastAPI, Request, Form
-from fastapi.responses import Response
+from fastapi.responses import Response, JSONResponse
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 from engine.hybrid_agent import HybridSalonAgent
+from engine.rule_engine import get_master_menu
+from database.db import (
+    get_all_appointments, get_live_metrics, update_appointment_status,
+    resolve_handover, resolve_complaint, get_all_complaints, get_handover_queue
+)
 try:
     from salon_config import SALON_NAME, PHONE_WHATSAPP, ADDRESS
 except Exception:
@@ -85,17 +91,9 @@ def handle_whatsapp_message(from_user: str, body_text: str = "", profile_name: s
 
     body_clean = (body_text or "").strip()
 
-    # Empty body / greeting trigger
+    # Empty body / greeting trigger -> Return interactive master menu
     if not body_clean:
-        reply = (
-            f"👋 Welcome to *{SALON_NAME}* (BH-5, LPU)!\n\n"
-            "I can help you:\n"
-            "• 💈 Check prices & services (type *services* or *rates*)\n"
-            "• 📅 Book an appointment (type *book haircut*)\n"
-            "• ⏰ Check salon timings (type *timings*)\n"
-            "• ❌ Cancel a booking (type *cancel*)\n"
-            "• 🤝 Speak to staff (type *manager*)"
-        )
+        reply = get_master_menu()
         return {
             "twiml": _build_twiml(reply),
             "reply": reply,
@@ -148,6 +146,75 @@ async def whatsapp_webhook(request: Request):
     return Response(content=result["twiml"], media_type="application/xml")
 
 
+@app.get("/whatsapp/meta-webhook")
+async def meta_webhook_verification(request: Request):
+    """
+    Meta WhatsApp Cloud API Webhook Verification Challenge.
+    Meta sends hub.mode, hub.verify_token, hub.challenge.
+    """
+    mode = request.query_params.get("hub.mode")
+    token = request.query_params.get("hub.verify_token")
+    challenge = request.query_params.get("hub.challenge")
+    expected_token = os.environ.get("META_VERIFY_TOKEN", "salon_ai_meta_2026")
+
+    if mode == "subscribe" and token == expected_token:
+        return Response(content=challenge, media_type="text/plain")
+    return Response(content="Verification token mismatch", status_code=403)
+
+
+@app.post("/whatsapp/meta-webhook")
+async def meta_webhook_handler(request: Request):
+    """
+    Meta WhatsApp Cloud API Message Receiver.
+    Accepts incoming message JSON, invokes Hybrid Agent, and replies via Meta Graph API.
+    """
+    try:
+        payload = await request.json()
+    except Exception:
+        return JSONResponse(status_code=400, content={"error": "Invalid JSON"})
+
+    for entry in payload.get("entry", []):
+        for change in entry.get("changes", []):
+            val = change.get("value", {})
+            messages = val.get("messages", [])
+            metadata = val.get("metadata", {})
+            phone_number_id = metadata.get("phone_number_id", os.environ.get("META_PHONE_NUMBER_ID", ""))
+            contacts = val.get("contacts", [])
+            profile_name = contacts[0].get("profile", {}).get("name", "") if contacts else ""
+
+            for msg in messages:
+                from_user = msg.get("from", "")
+                msg_type = msg.get("type", "")
+                body_text = msg.get("text", {}).get("body", "") if msg_type == "text" else ""
+
+                if from_user and body_text:
+                    result = handle_whatsapp_message(from_user, body_text, profile_name)
+                    reply_text = result.get("reply", "")
+
+                    # Send outgoing reply via Meta Graph API
+                    access_token = os.environ.get("META_ACCESS_TOKEN", "")
+                    if access_token and phone_number_id:
+                        url = f"https://graph.facebook.com/v21.0/{phone_number_id}/messages"
+                        headers = {
+                            "Authorization": f"Bearer {access_token}",
+                            "Content-Type": "application/json"
+                        }
+                        data = {
+                            "messaging_product": "whatsapp",
+                            "recipient_type": "individual",
+                            "to": from_user,
+                            "type": "text",
+                            "text": {"body": reply_text}
+                        }
+                        try:
+                            async with httpx.AsyncClient() as client:
+                                await client.post(url, headers=headers, json=data, timeout=10.0)
+                        except Exception as e:
+                            print(f"[Meta Graph API Error]: {e}")
+
+    return {"status": "ok"}
+
+
 @app.get("/health")
 def health():
     return {
@@ -157,3 +224,58 @@ def health():
         "whatsapp_channel": "Twilio Sandbox",
         "active_user_sessions": len(_user_sessions)
     }
+
+
+# ================= REAL-TIME DASHBOARD REST SYNC APIS =================
+
+@app.get("/api/appointments")
+def api_get_appointments():
+    """Returns all salon appointments for real-time dashboard sync."""
+    return get_all_appointments()
+
+
+@app.get("/api/metrics")
+def api_get_metrics():
+    """Returns real-time KPIs and revenue metrics for salon owner."""
+    return get_live_metrics()
+
+
+@app.get("/api/handovers")
+def api_get_handovers():
+    """Returns pending human staff handovers."""
+    return get_handover_queue()
+
+
+@app.get("/api/complaints")
+def api_get_complaints():
+    """Returns customer complaints desk tickets."""
+    return get_all_complaints()
+
+
+@app.post("/api/action/status")
+async def api_update_status(request: Request):
+    """Updates appointment status (e.g. COMPLETED, CANCELLED, BOOKED)."""
+    data = await request.json()
+    app_id = int(data.get("id", 0))
+    new_status = data.get("status", "COMPLETED")
+    success = update_appointment_status(app_id, new_status)
+    return {"success": success, "id": app_id, "status": new_status}
+
+
+@app.post("/api/action/handover")
+async def api_resolve_handover(request: Request):
+    """Resolves an escalation handover."""
+    data = await request.json()
+    ho_id = int(data.get("id", 0))
+    resolve_handover(ho_id)
+    return {"success": True, "id": ho_id}
+
+
+@app.post("/api/action/complaint")
+async def api_resolve_complaint(request: Request):
+    """Resolves a customer complaint ticket with notes."""
+    data = await request.json()
+    cid = int(data.get("id", 0))
+    notes = data.get("notes", "Resolved by salon management")
+    resolve_complaint(cid, notes)
+    return {"success": True, "id": cid}

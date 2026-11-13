@@ -31,6 +31,9 @@ INTENT_PATTERNS = {
     "greeting": [
         r"\b(hi|hello|hey|good\s*(morning|afternoon|evening)|namaste|salaam)\b"
     ],
+    "show_menu": [
+        r"\b(menu|options|help|start|main\s*menu|list\s*services)\b"
+    ],
     "farewell": [
         r"\b(bye|goodbye|see\s*you|thanks|thank\s*you|shukriya|dhanyawad)\b"
     ],
@@ -77,6 +80,24 @@ INTENT_PATTERNS = {
         r"\b(walk\s*in|walkin|direct\s*aana|without\s*appointment)\b"
     ]
 }
+
+
+def get_master_menu() -> str:
+    """Returns the rich interactive WhatsApp & customer menu."""
+    return (
+        f"👋 Welcome to *{SALON_NAME}* (BH-5, LPU Campus)!\n"
+        "✂️ *Official Campus Grooming Bot*\n\n"
+        "Please select a services option or reply with any service name:\n\n"
+        "1️⃣ *Hair Services & Styling* (Hair Cut ₹100, Head Wash ₹50, Shave ₹120, Colour ₹450, Cut & Colour Combo ₹500)\n"
+        "2️⃣ *Beard & Grooming Services* (Beard Trim ₹50, Head Massage ₹100, Almond/Olive Oil ₹150)\n"
+        "3️⃣ *Facials & Skin Care Services* (Face Bleach ₹180, D-Tan Cleaner ₹300, D-Tan Facial ₹450, Gold ₹700, Whitening ₹600)\n"
+        "4️⃣ *Hair Spa & Treatment Services* (Keratin Spa ₹400, Loreal Matrix Spa ₹500, Anti-Dandruff 3 Seatings ₹1500)\n"
+        "5️⃣ 📅 *Book an Appointment Directly*\n"
+        "6️⃣ ⏰ *Salon Timings & Location (BH-5, LPU)*\n"
+        "7️⃣ 📋 *My Booking Status / Cancel*\n"
+        "8️⃣ 🤝 *Talk to Salon Manager*\n\n"
+        "💡 _You can reply with a number (e.g. 1, 2, 5) or type naturally like 'book haircut tomorrow at 4pm' or 'how much is d-tan?'_"
+    )
 
 
 class RuleBasedSalonChatbot:
@@ -209,11 +230,34 @@ class RuleBasedSalonChatbot:
 
     def detect_intent(self, text: str) -> tuple[str, float, list[str]]:
         """
-        Classifies intent using regex pattern matches.
+        Classifies intent using regex pattern matches and numeric menu mapping.
         Returns: (intent_name, confidence_score, matched_patterns)
         """
         text_lower = text.lower()
+        stripped = text_lower.strip().rstrip(".")
         matched_rules = []
+
+        # Direct Numeric Menu Selection (only if not in active slot filling)
+        if not self.state.startswith("AWAITING_"):
+            if stripped in ["1", "option 1", "category 1"]:
+                return "menu_1_hair", 0.99, ["DIRECT_MENU_CHOICE_1"]
+            elif stripped in ["2", "option 2", "category 2"]:
+                return "menu_2_beard", 0.99, ["DIRECT_MENU_CHOICE_2"]
+            elif stripped in ["3", "option 3", "category 3"]:
+                return "menu_3_facial", 0.99, ["DIRECT_MENU_CHOICE_3"]
+            elif stripped in ["4", "option 4", "category 4"]:
+                return "menu_4_spa", 0.99, ["DIRECT_MENU_CHOICE_4"]
+            elif stripped in ["5", "option 5", "category 5"]:
+                return "book_appointment", 0.99, ["DIRECT_MENU_CHOICE_5"]
+            elif stripped in ["6", "option 6", "category 6"]:
+                return "timing_inquiry", 0.99, ["DIRECT_MENU_CHOICE_6"]
+            elif stripped in ["7", "option 7", "category 7"]:
+                return "view_booking", 0.99, ["DIRECT_MENU_CHOICE_7"]
+            elif stripped in ["8", "option 8", "category 8"]:
+                return "human_handover", 0.99, ["DIRECT_MENU_CHOICE_8"]
+            elif stripped in ["menu", "help", "options", "start"]:
+                return "show_menu", 0.99, ["DIRECT_MENU_ROOT"]
+
         best_intent = "unknown"
 
         for intent, patterns in INTENT_PATTERNS.items():
@@ -393,8 +437,48 @@ class RuleBasedSalonChatbot:
         elif intent == "walkin_policy":
             response_text = "🚶 Walk-ins are always welcome! However, appointments booked here are given priority so you skip the queue."
 
-        elif intent == "greeting":
-            response_text = f"Hello! Welcome to {SALON_NAME} at BH-5. I can help you check prices, services, or book an appointment in seconds. How may I assist you today?"
+        elif intent in ["greeting", "show_menu"]:
+            response_text = get_master_menu()
+
+        elif intent == "menu_1_hair":
+            response_text = (
+                "✂️ *Haircuts & Styling Menu:*\n"
+                "• *Hair Cut* — ₹100 (approx. 20 mins)\n"
+                "• *Head Wash* — ₹50 (approx. 15 mins)\n"
+                "• *Head Shave* — ₹120 (approx. 20 mins)\n"
+                "• *Hair Colour* — ₹450 (approx. 40 mins)\n"
+                "• *Hair Colour & Hair Cut Combo* — ₹500 (approx. 50 mins)\n\n"
+                "👉 To book any of these, reply with the name (e.g. *'Hair Cut tomorrow 4pm'*) or say *'book haircut'*!"
+            )
+
+        elif intent == "menu_2_beard":
+            response_text = (
+                "🧔 *Beard & Grooming Menu:*\n"
+                "• *Beard Trim / Gaming Shave* — ₹50 (approx. 15 mins)\n"
+                "• *Head Massage* — ₹100 (approx. 20 mins)\n"
+                "• *Head Massage with Olive/Almond Oil* — ₹150 (approx. 25 mins)\n\n"
+                "👉 To book, reply with the name (e.g. *'Beard Trim tomorrow at 3pm'*) or say *'book beard trim'*!"
+            )
+
+        elif intent == "menu_3_facial":
+            response_text = (
+                "✨ *Facials & Skin Care Menu:*\n"
+                "• *Face Bleach* — ₹180 (approx. 20 mins)\n"
+                "• *D Tan Cleaner* — ₹300 (approx. 25 mins)\n"
+                "• *D Tan Facial* — ₹450 (approx. 35 mins)\n"
+                "• *Whitening Facial* — ₹600 (approx. 40 mins)\n"
+                "• *Gold/Diamond Facial with Oxy Bleach* — ₹700 (approx. 50 mins)\n\n"
+                "👉 To book, reply with the name (e.g. *'D Tan Facial tomorrow at 5pm'*) or say *'book facial'*!"
+            )
+
+        elif intent == "menu_4_spa":
+            response_text = (
+                "🌿 *Hair Spa & Advanced Treatments Menu:*\n"
+                "• *Keratin Hair Spa* — ₹400 (approx. 45 mins)\n"
+                "• *Loreal Matrix Hair Spa* — ₹500 (approx. 45 mins)\n"
+                "• *Anti-Dandruff Treatment (3 Seatings Package)* — ₹1500\n\n"
+                "👉 To book, reply with the name (e.g. *'Keratin Hair Spa tomorrow'*) or say *'book keratin'*!"
+            )
 
         elif intent == "farewell":
             response_text = f"Thank you for contacting {SALON_NAME}! Groom yourself at Razors-n-scissors. Have a great day! ✂️"
