@@ -177,14 +177,39 @@ def get_all_services():
 
 
 def get_service_by_name_or_id(identifier):
-    """Find a service by ID or fuzzy name match."""
+    """Find a service by ID, fuzzy name match, or multi-service combo joined with '+'."""
+    if not identifier:
+        return None
+    if isinstance(identifier, str) and "+" in identifier:
+        parts = [p.strip() for p in identifier.split("+") if p.strip()]
+        total_price = 0.0
+        total_duration = 0
+        names = []
+        for p in parts:
+            s_obj = get_service_by_name_or_id(p)
+            if s_obj:
+                total_price += float(s_obj["price_inr"])
+                total_duration += int(s_obj["duration_minutes"])
+                names.append(s_obj["name"])
+        if names:
+            # Combo discount: Haircut + Beard combo is ₹140
+            if "Hair Cut" in names and any("Beard" in n for n in names) and len(names) == 2:
+                total_price = 140.0
+            return {
+                "id": "+".join(parts),
+                "name": " + ".join(names),
+                "price_inr": total_price,
+                "duration_minutes": max(total_duration, 20),
+                "category": "Combo Package"
+            }
+
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
     SELECT * FROM services 
     WHERE id = ? OR LOWER(name) LIKE ?
     LIMIT 1
-    """, (identifier, f"%{identifier.lower()}%"))
+    """, (identifier, f"%{str(identifier).lower()}%"))
     row = cursor.fetchone()
     conn.close()
     return dict(row) if row else None
@@ -247,7 +272,21 @@ def get_available_slots(barber_id, date_str):
     booked_slots = cursor.fetchall()
     conn.close()
 
-    booked_times = {b["start_time"] for b in booked_slots}
+    def is_slot_busy(candidate):
+        try:
+            cand_dt = datetime.strptime(candidate, "%H:%M")
+            for b in booked_slots:
+                try:
+                    b_start = datetime.strptime(b["start_time"], "%H:%M")
+                    b_end = datetime.strptime(b["end_time"], "%H:%M")
+                    if b_start <= cand_dt < b_end:
+                        return True
+                except Exception:
+                    if b["start_time"] == candidate:
+                        return True
+        except Exception:
+            pass
+        return False
 
     # Generate all candidate slots between 09:00 and 20:30
     candidate_slots = [
@@ -257,13 +296,14 @@ def get_available_slots(barber_id, date_str):
         "18:30", "19:00", "19:30", "20:00"
     ]
 
-    available = [slot for slot in candidate_slots if slot not in booked_times]
+    available = [slot for slot in candidate_slots if not is_slot_busy(slot)]
     return available
 
 
 def book_appointment(customer_name, phone, service_id, barber_id, date_str, time_str):
     """
-    Creates a new appointment with conflict detection.
+    Creates a new appointment with strict interval conflict detection.
+    Supports single or multi-service combinations (e.g. 'Hair Cut + Beard Trim').
     Returns (success: bool, message: str, appointment_id: int or None)
     """
     service = get_service_by_name_or_id(service_id)
@@ -274,7 +314,7 @@ def book_appointment(customer_name, phone, service_id, barber_id, date_str, time
     if not barber:
         return False, f"Barber '{barber_id}' could not be found.", None
 
-    # Calculate end time
+    # Calculate end time based on combined duration
     try:
         start_dt = datetime.strptime(time_str, "%H:%M")
         end_dt = start_dt + timedelta(minutes=service["duration_minutes"])
@@ -285,16 +325,20 @@ def book_appointment(customer_name, phone, service_id, barber_id, date_str, time
     conn = get_connection()
     cursor = conn.cursor()
 
-    # Conflict check
+    # Strict interval conflict check: new_start < existing_end AND new_end > existing_start
     cursor.execute("""
-    SELECT id FROM appointments
-    WHERE barber_id = ? AND appointment_date = ? AND start_time = ? AND status = 'BOOKED'
-    """, (barber["id"], date_str, time_str))
+    SELECT id, customer_name, start_time, end_time FROM appointments
+    WHERE barber_id = ? 
+      AND appointment_date = ? 
+      AND status = 'BOOKED'
+      AND start_time < ? 
+      AND end_time > ?
+    """, (barber["id"], date_str, end_time_str, time_str))
     existing = cursor.fetchone()
 
     if existing:
         conn.close()
-        return False, f"Sorry, {barber['name']} is already booked at {time_str} on {date_str}.", None
+        return False, f"Sorry, {barber['name']} is already booked / busy from {existing['start_time']} to {existing['end_time']} on {date_str}. Please choose another time slot.", None
 
     cursor.execute("""
     INSERT INTO appointments (customer_name, phone, service_id, service_name, barber_id, barber_name, appointment_date, start_time, end_time, price_inr, status)

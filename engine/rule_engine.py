@@ -11,7 +11,7 @@ Implements:
 import re
 from datetime import datetime, timedelta
 from database.db import (
-    get_all_services, get_all_barbers, get_available_slots,
+    get_all_services, get_service_by_name_or_id, get_all_barbers, get_available_slots,
     book_appointment, cancel_appointment_by_phone, get_appointments_by_phone,
     log_complaint, add_to_handover_queue
 )
@@ -83,20 +83,27 @@ INTENT_PATTERNS = {
 
 
 def get_master_menu() -> str:
-    """Returns the rich interactive WhatsApp & customer menu."""
+    """Returns the clean, modern interactive WhatsApp menu (big company card layout)."""
     return (
-        f"👋 Welcome to *{SALON_NAME}* (BH-5, LPU Campus)!\n"
-        "✂️ *Official Campus Grooming Bot*\n\n"
-        "Please select a services option or reply with any service name:\n\n"
-        "1️⃣ *Hair Services & Styling* (Hair Cut ₹100, Head Wash ₹50, Shave ₹120, Colour ₹450, Cut & Colour Combo ₹500)\n"
-        "2️⃣ *Beard & Grooming Services* (Beard Trim ₹50, Head Massage ₹100, Almond/Olive Oil ₹150)\n"
-        "3️⃣ *Facials & Skin Care Services* (Face Bleach ₹180, D-Tan Cleaner ₹300, D-Tan Facial ₹450, Gold ₹700, Whitening ₹600)\n"
-        "4️⃣ *Hair Spa & Treatment Services* (Keratin Spa ₹400, Loreal Matrix Spa ₹500, Anti-Dandruff 3 Seatings ₹1500)\n"
-        "5️⃣ 📅 *Book an Appointment Directly*\n"
-        "6️⃣ ⏰ *Salon Timings & Location (BH-5, LPU)*\n"
-        "7️⃣ 📋 *My Booking Status / Cancel*\n"
-        "8️⃣ 🤝 *Talk to Salon Manager*\n\n"
-        "💡 _You can reply with a number (e.g. 1, 2, 5) or type naturally like 'book haircut tomorrow at 4pm' or 'how much is d-tan?'_"
+        f"💈 *{SALON_NAME}* (BH-5, LPU Campus) 💈\n"
+        "✂️ _Official Campus Grooming Assistant_\n"
+        "⏰ Open Daily: 09:00 AM – 09:00 PM\n\n"
+        "Please select a service by number to book:\n\n"
+        "1️⃣ *Hair Cut* — ₹100 _(20 min)_\n"
+        "2️⃣ *Beard Trim / Shave* — ₹50 _(15 min)_\n"
+        "3️⃣ *Cut + Beard Combo* — ₹140 _(30 min)_\n"
+        "4️⃣ *Head Wash* — ₹50 _(15 min)_\n"
+        "5️⃣ *Hair Spa / Keratin* — ₹400 _(45 min)_\n"
+        "6️⃣ *D-Tan Cleaner / Facial* — ₹300 _(25 min)_\n"
+        "7️⃣ *Hair Colour* — ₹450 _(40 min)_\n\n"
+        "───────────────\n"
+        "8️⃣ 📋 *Full Price List (All Services)*\n"
+        "9️⃣ ⏰ *Salon Timings & Location*\n"
+        "🔟 💬 *Check Booking / Cancel / Staff*\n\n"
+        "💡 *Tips:*\n"
+        "• Reply with a number (e.g. *1* or *3*)\n"
+        "• Or select multiple (e.g. *1 and 2*)\n"
+        "• Or type naturally: _'1 tomorrow at 4pm'_"
     )
 
 
@@ -141,47 +148,94 @@ class RuleBasedSalonChatbot:
         if phone_match:
             extracted["phone"] = phone_match.group(1)
 
-        # 2. Service Extraction (matches real Razors-n-scissors service names)
-        services = get_all_services()
-        for s in services:
-            s_name_lower = s["name"].lower()
-            if s_name_lower in text_lower:
-                extracted["service"] = s["name"]
-                break
+        # 2. Service Extraction with Multi-Service & Numeric Code Support
+        MENU_CODE_MAP = {
+            "1": "Hair Cut",
+            "2": "Beard Trim / Gaming Shave",
+            "3": "Hair Cut + Beard Trim / Gaming Shave",
+            "4": "Head Wash",
+            "5": "Keratin Hair Spa",
+            "6": "D Tan Cleaner",
+            "7": "Hair Colour"
+        }
 
-        if "service" not in extracted:
-            if re.search(r"\b(hair\s*cut\s*&\s*hair\s*cut|colour\s*&\s*cut|color\s*&\s*cut|hair\s*color\s*&\s*cut)\b", text_lower):
-                extracted["service"] = "Hair Colour & Hair Cut"
-            elif re.search(r"\b(dandruff|anti\s*dandruff)\b", text_lower):
-                extracted["service"] = "Anti Dandruff Treatment (3 seatings)"
-            elif re.search(r"\b(gold|diamond|oxy\s*bleach)\b", text_lower):
-                extracted["service"] = "Gold/Diamond Facial with Oxy Bleach"
-            elif re.search(r"\b(whitening\s*facial|whitening)\b", text_lower):
-                extracted["service"] = "Whitening Facial"
-            elif re.search(r"\b(d\s*tan\s*facial|detan\s*facial)\b", text_lower):
-                extracted["service"] = "D Tan Facial"
-            elif re.search(r"\b(d\s*tan\s*cleaner|detan\s*cleaner)\b", text_lower):
-                extracted["service"] = "D Tan Cleaner"
-            elif re.search(r"\b(face\s*bleach|bleach)\b", text_lower):
-                extracted["service"] = "Face Bleach"
-            elif re.search(r"\b(keratin|keratin\s*spa)\b", text_lower):
-                extracted["service"] = "Keratin Hair Spa"
-            elif re.search(r"\b(matrix|loreal|loreal\s*matrix)\b", text_lower):
-                extracted["service"] = "Loreal Matrix Hair Spa"
-            elif re.search(r"\b(olive|almond)\b", text_lower):
-                extracted["service"] = "Head Massage Olive/Almond Oil"
-            elif re.search(r"\b(head\s*massage|massage)\b", text_lower):
-                extracted["service"] = "Head Massage"
+        # Multi-service check with numbers (e.g. "1 and 2", "1, 2", "1 + 2", "1 & 2")
+        multi_num_match = re.search(r"\b([1-7])\s*(?:and|&|\+|\,)\s*([1-7])\b", text_lower)
+        if multi_num_match:
+            n1, n2 = multi_num_match.group(1), multi_num_match.group(2)
+            s1 = MENU_CODE_MAP.get(n1)
+            s2 = MENU_CODE_MAP.get(n2)
+            if s1 and s2:
+                if (n1 == "1" and n2 == "2") or (n1 == "2" and n2 == "1"):
+                    extracted["service"] = "Hair Cut + Beard Trim / Gaming Shave"
+                else:
+                    extracted["service"] = f"{s1} + {s2}"
+
+        # If not numeric combo, check if message is a single number or starts with single number (e.g. "1", "1 tomorrow", "1 at 4pm")
+        if "service" not in extracted and not self.state.startswith("AWAITING_TIME") and not self.state.startswith("AWAITING_PHONE"):
+            single_num_match = re.match(r"^\s*(?:option\s*)?([1-7])(?:\b|\.|\s|$)", text_lower)
+            if single_num_match and not re.search(r"^\s*[1-7]\s*(?:am|pm|:)", text_lower):
+                num = single_num_match.group(1)
+                extracted["service"] = MENU_CODE_MAP[num]
+
+        # Multi-service & single service detection by keywords
+        if "service" not in extracted and not self.state.startswith("AWAITING_TIME") and not self.state.startswith("AWAITING_PHONE"):
+            found = []
+            if re.search(r"\b(haircut|hair\s*cut|cut|baal)\b", text_lower) and not re.search(r"\b(colour|color)\s*&\s*(cut|hair\s*cut)\b", text_lower):
+                found.append("Hair Cut")
+            if re.search(r"\b(beard|darhi|gaming\s*shave)\b", text_lower):
+                found.append("Beard Trim / Gaming Shave")
             elif re.search(r"\b(head\s*shave)\b", text_lower):
-                extracted["service"] = "Head Shave"
-            elif re.search(r"\b(head\s*wash|wash)\b", text_lower):
-                extracted["service"] = "Head Wash"
-            elif re.search(r"\b(beard|darhi|trim|gaming\s*shave|shave)\b", text_lower):
-                extracted["service"] = "Beard Trim / Gaming Shave"
-            elif re.search(r"\b(colour|color|dye)\b", text_lower):
-                extracted["service"] = "Hair Colour"
-            elif re.search(r"\b(haircut|hair\s*cut|cut|baal)\b", text_lower):
-                extracted["service"] = "Hair Cut"
+                found.append("Head Shave")
+            elif re.search(r"\b(shave)\b", text_lower) and "Beard Trim / Gaming Shave" not in found:
+                found.append("Beard Trim / Gaming Shave")
+
+            if re.search(r"\b(head\s*wash|wash)\b", text_lower):
+                found.append("Head Wash")
+            if re.search(r"\b(head\s*massage|massage)\b", text_lower):
+                if re.search(r"\b(olive|almond)\b", text_lower):
+                    found.append("Head Massage Olive/Almond Oil")
+                else:
+                    found.append("Head Massage")
+            if re.search(r"\b(keratin|keratin\s*spa)\b", text_lower):
+                found.append("Keratin Hair Spa")
+            elif re.search(r"\b(matrix|loreal)\b", text_lower):
+                found.append("Loreal Matrix Hair Spa")
+            if re.search(r"\b(d\s*tan\s*facial|detan\s*facial)\b", text_lower):
+                found.append("D Tan Facial")
+            elif re.search(r"\b(d\s*tan\s*cleaner|detan\s*cleaner|d\s*tan|detan)\b", text_lower):
+                found.append("D Tan Cleaner")
+            elif re.search(r"\b(face\s*bleach|bleach)\b", text_lower):
+                found.append("Face Bleach")
+            elif re.search(r"\b(gold|diamond|oxy\s*bleach)\b", text_lower):
+                found.append("Gold/Diamond Facial with Oxy Bleach")
+            elif re.search(r"\b(whitening)\b", text_lower):
+                found.append("Whitening Facial")
+            if re.search(r"\b(colour|color|dye)\b", text_lower):
+                if re.search(r"\b(cut|hair\s*cut)\b", text_lower):
+                    found = [f for f in found if f != "Hair Cut"]
+                    found.append("Hair Colour & Hair Cut")
+                else:
+                    found.append("Hair Colour")
+            if re.search(r"\b(dandruff|anti\s*dandruff)\b", text_lower):
+                found.append("Anti Dandruff Treatment (3 seatings)")
+
+            if len(found) > 1:
+                # Deduplicate
+                unique_found = []
+                for s in found:
+                    if s not in unique_found:
+                        unique_found.append(s)
+                extracted["service"] = " + ".join(unique_found)
+            elif len(found) == 1:
+                extracted["service"] = found[0]
+
+        # Fallback to direct DB lookup if still not found
+        if "service" not in extracted and not self.state.startswith("AWAITING_TIME") and not self.state.startswith("AWAITING_PHONE"):
+            for s in get_all_services():
+                if s["name"].lower() in text_lower:
+                    extracted["service"] = s["name"]
+                    break
 
         # 3. Barber Extraction (Auto-assigned)
         extracted["barber"] = self.DEFAULT_BARBER
@@ -198,11 +252,24 @@ class RuleBasedSalonChatbot:
                 extracted["date"] = date_match.group(1)
 
         # 5. Time Extraction
-        time_match = re.search(r"\b([01]?\d|2[0-3])(?::([0-5]\d))?\s*(am|pm)?\b", text_lower)
+        # Look for explicit times with colon or am/pm first to avoid misinterpreting service digits
+        time_match = re.search(r"\b(?:at\s+)?([01]?\d|2[0-3]):([0-5]\d)\s*(am|pm)?\b", text_lower)
+        if not time_match:
+            time_match = re.search(r"\b(?:at\s+)?([01]?\d|2[0-3])\s*(am|pm)\b", text_lower)
+        if not time_match and (self.state == "AWAITING_TIME" or re.search(r"\bat\s+\d", text_lower)):
+            time_match = re.search(r"\b(?:at\s+)?([01]?\d|2[0-3])(?::([0-5]\d))?\s*(am|pm)?\b", text_lower)
+
         if time_match:
             hour_str = time_match.group(1)
-            min_str = time_match.group(2) or "00"
-            meridiem = time_match.group(3)
+            # Find minute and meridiem across groups
+            groups = time_match.groups()
+            meridiem = None
+            min_str = "00"
+            for g in groups[1:]:
+                if g in ["am", "pm"]:
+                    meridiem = g
+                elif g and g.isdigit():
+                    min_str = g
 
             # Avoid mistaking phone start as time
             if not phone_match or time_match.start() < phone_match.start() or time_match.end() > phone_match.end():
@@ -239,22 +306,16 @@ class RuleBasedSalonChatbot:
 
         # Direct Numeric Menu Selection (only if not in active slot filling)
         if not self.state.startswith("AWAITING_"):
-            if stripped in ["1", "option 1", "category 1"]:
-                return "menu_1_hair", 0.99, ["DIRECT_MENU_CHOICE_1"]
-            elif stripped in ["2", "option 2", "category 2"]:
-                return "menu_2_beard", 0.99, ["DIRECT_MENU_CHOICE_2"]
-            elif stripped in ["3", "option 3", "category 3"]:
-                return "menu_3_facial", 0.99, ["DIRECT_MENU_CHOICE_3"]
-            elif stripped in ["4", "option 4", "category 4"]:
-                return "menu_4_spa", 0.99, ["DIRECT_MENU_CHOICE_4"]
-            elif stripped in ["5", "option 5", "category 5"]:
-                return "book_appointment", 0.99, ["DIRECT_MENU_CHOICE_5"]
-            elif stripped in ["6", "option 6", "category 6"]:
-                return "timing_inquiry", 0.99, ["DIRECT_MENU_CHOICE_6"]
-            elif stripped in ["7", "option 7", "category 7"]:
-                return "view_booking", 0.99, ["DIRECT_MENU_CHOICE_7"]
-            elif stripped in ["8", "option 8", "category 8"]:
-                return "human_handover", 0.99, ["DIRECT_MENU_CHOICE_8"]
+            if stripped in ["1", "option 1", "2", "option 2", "3", "option 3", "4", "option 4", "5", "option 5", "6", "option 6", "7", "option 7"]:
+                return "book_appointment", 0.99, ["DIRECT_MENU_SERVICE_CHOICE"]
+            elif stripped in ["8", "option 8", "catalog", "prices", "price list"]:
+                return "pricing_inquiry", 0.99, ["DIRECT_MENU_CHOICE_8"]
+            elif stripped in ["9", "option 9", "timings", "timing", "location", "hours"]:
+                return "timing_inquiry", 0.99, ["DIRECT_MENU_CHOICE_9"]
+            elif stripped in ["10", "option 10", "status", "cancel", "my booking"]:
+                return "view_booking", 0.99, ["DIRECT_MENU_CHOICE_10"]
+            elif stripped in ["11", "option 11", "manager", "staff"]:
+                return "human_handover", 0.99, ["DIRECT_MENU_CHOICE_11"]
             elif stripped in ["menu", "help", "options", "start"]:
                 return "show_menu", 0.99, ["DIRECT_MENU_ROOT"]
 
@@ -300,6 +361,12 @@ class RuleBasedSalonChatbot:
             if v and not self.slots.get(k):
                 self.slots[k] = v
                 trace["rules_fired"].append(f"EXTRACTED_SLOT: {k} = '{v}'")
+
+        # If user selected a service while in IDLE, start booking immediately
+        if self.state == "IDLE" and self.slots.get("service") and intent not in [
+            "pricing_inquiry", "timing_inquiry", "human_handover", "lodge_complaint", "cancel_appointment"
+        ]:
+            intent = "book_appointment"
 
         # 3. FSM Execution
         response_text = ""
@@ -375,32 +442,21 @@ class RuleBasedSalonChatbot:
         elif intent == "pricing_inquiry":
             service_kw = self.slots.get("service")
             if service_kw:
-                s = [x for x in get_all_services() if x["name"].lower() == service_kw.lower()]
-                if s:
-                    s_obj = s[0]
-                    response_text = f"💰 **{s_obj['name']}** is priced at **₹{int(s_obj['price_inr'])}** (Duration: {s_obj['duration_minutes']} mins). Would you like to book a slot for this?"
+                s_obj = get_service_by_name_or_id(service_kw)
+                if s_obj:
+                    response_text = f"💰 *{s_obj['name']}* is priced at *₹{int(s_obj['price_inr'])}* ({s_obj['duration_minutes']} mins). Reply *'book {s_obj['name']}'* to reserve a slot!"
                 else:
                     response_text = "At Razors-n-scissors, Hair Cut is ₹100, Beard Trim is ₹50, and Head Wash is ₹50. Say 'services' to see the full list."
             else:
-                response_text = (
-                    "💈 **Razors-n-scissors Price List (FOR BOY'S SALOON):**\n"
-                    "• Hair Cut: ₹100\n"
-                    "• Head Wash: ₹50\n"
-                    "• Head Shave: ₹120\n"
-                    "• Beard Trim / Gaming Shave: ₹50\n"
-                    "• Head Massage: ₹100\n"
-                    "• Head Massage Olive/Almond Oil: ₹150\n"
-                    "• Face Bleach: ₹180\n"
-                    "• D Tan Cleaner: ₹300\n"
-                    "• D Tan Facial: ₹450\n"
-                    "• Gold/Diamond Facial with Oxy Bleach: ₹700\n"
-                    "• Whitening Facial: ₹600\n"
-                    "• Keratin Hair Spa: ₹400\n"
-                    "• Loreal Matrix Hair Spa: ₹500\n"
-                    "• Hair Colour: ₹450\n"
-                    "• Hair Colour & Hair Cut: ₹500\n"
-                    "• Anti Dandruff Treatment (3 seatings): ₹1500"
-                )
+                services = get_all_services()
+                lines = [
+                    f"💈 *{SALON_NAME.upper()} — COMPLETE PRICE LIST*",
+                    "📍 BH-5 Ground Floor, LPU Campus\n"
+                ]
+                for s in services:
+                    lines.append(f"• *{s['name']}* — ₹{int(s['price_inr'])} _({s['duration_minutes']}m)_")
+                lines.append("\n👉 Reply with a service number (1-7) or name to book directly!")
+                response_text = "\n".join(lines)
 
         elif intent == "timing_inquiry":
             response_text = f"⏰ **{SALON_NAME} Timings:**\n• {OPERATING_HOURS}\n• Location: {ADDRESS}\nWould you like to reserve a time slot today?"
@@ -440,46 +496,6 @@ class RuleBasedSalonChatbot:
         elif intent in ["greeting", "show_menu"]:
             response_text = get_master_menu()
 
-        elif intent == "menu_1_hair":
-            response_text = (
-                "✂️ *Haircuts & Styling Menu:*\n"
-                "• *Hair Cut* — ₹100 (approx. 20 mins)\n"
-                "• *Head Wash* — ₹50 (approx. 15 mins)\n"
-                "• *Head Shave* — ₹120 (approx. 20 mins)\n"
-                "• *Hair Colour* — ₹450 (approx. 40 mins)\n"
-                "• *Hair Colour & Hair Cut Combo* — ₹500 (approx. 50 mins)\n\n"
-                "👉 To book any of these, reply with the name (e.g. *'Hair Cut tomorrow 4pm'*) or say *'book haircut'*!"
-            )
-
-        elif intent == "menu_2_beard":
-            response_text = (
-                "🧔 *Beard & Grooming Menu:*\n"
-                "• *Beard Trim / Gaming Shave* — ₹50 (approx. 15 mins)\n"
-                "• *Head Massage* — ₹100 (approx. 20 mins)\n"
-                "• *Head Massage with Olive/Almond Oil* — ₹150 (approx. 25 mins)\n\n"
-                "👉 To book, reply with the name (e.g. *'Beard Trim tomorrow at 3pm'*) or say *'book beard trim'*!"
-            )
-
-        elif intent == "menu_3_facial":
-            response_text = (
-                "✨ *Facials & Skin Care Menu:*\n"
-                "• *Face Bleach* — ₹180 (approx. 20 mins)\n"
-                "• *D Tan Cleaner* — ₹300 (approx. 25 mins)\n"
-                "• *D Tan Facial* — ₹450 (approx. 35 mins)\n"
-                "• *Whitening Facial* — ₹600 (approx. 40 mins)\n"
-                "• *Gold/Diamond Facial with Oxy Bleach* — ₹700 (approx. 50 mins)\n\n"
-                "👉 To book, reply with the name (e.g. *'D Tan Facial tomorrow at 5pm'*) or say *'book facial'*!"
-            )
-
-        elif intent == "menu_4_spa":
-            response_text = (
-                "🌿 *Hair Spa & Advanced Treatments Menu:*\n"
-                "• *Keratin Hair Spa* — ₹400 (approx. 45 mins)\n"
-                "• *Loreal Matrix Hair Spa* — ₹500 (approx. 45 mins)\n"
-                "• *Anti-Dandruff Treatment (3 Seatings Package)* — ₹1500\n\n"
-                "👉 To book, reply with the name (e.g. *'Keratin Hair Spa tomorrow'*) or say *'book keratin'*!"
-            )
-
         elif intent == "farewell":
             response_text = f"Thank you for contacting {SALON_NAME}! Groom yourself at Razors-n-scissors. Have a great day! ✂️"
 
@@ -516,14 +532,23 @@ class RuleBasedSalonChatbot:
             self.state = "AWAITING_SERVICE"
             return (
                 "Sure! Which service would you like to book?\n"
-                "(Options: Hair Cut [₹100], Beard Trim [₹50], Head Wash [₹50], "
-                "D Tan Facial [₹450], Keratin Hair Spa [₹400], Hair Colour & Cut [₹500], etc.)"
+                "(Options: 1️⃣ Hair Cut [₹100], 2️⃣ Beard Trim [₹50], 3️⃣ Combo [₹140], "
+                "4️⃣ Head Wash [₹50], 5️⃣ Keratin Spa [₹400], 6️⃣ D-Tan [₹300], etc.)"
             )
 
         # Slot 2: Date
         if not self.slots["date"]:
             self.state = "AWAITING_DATE"
-            return f"Great choice ({self.slots['service']})! What date would you like to visit? (Say 'today', 'tomorrow', or a date like 2026-11-15)"
+            s_obj = get_service_by_name_or_id(self.slots["service"])
+            price_info = f" (₹{int(s_obj['price_inr'])})" if s_obj else ""
+            dur_info = f" · {s_obj['duration_minutes']} mins" if s_obj else ""
+            return (
+                f"Selected: ✂️ *{self.slots['service']}*{price_info}{dur_info}\n\n"
+                "What date and time would you like to visit?\n"
+                "• Reply *'today at 4pm'*\n"
+                "• Or *'tomorrow at 11am'*\n"
+                "• Or any date like *2026-11-15*"
+            )
 
         # Slot 3: Time
         if not self.slots["time_slot"]:
