@@ -1,17 +1,17 @@
-# INT428 Course Project Presentation: Razors-n-scissors Barber Salon AI
+# INT428 Course Project Presentation: Customer Support Chatbot & Operational Management Portal for a Real Small Business
 **Course:** INT428 Artificial Intelligence Essentials  
-**Topic:** Customer Support Chatbot & Operations Portal for a Real Small Business (Project 13)  
+**Topic:** Customer Support Chatbot & Operational Management Portal for a Real Small Business (Project 13)  
 **Presenter:** Suman Saha (Reg: 12524973, Group 13)  
 **Institution:** Lovely Professional University  
 
 ---
 
 ## Slide 1: Title & Project Scope
-* **Project Title:** 24/7 Intelligent AI Salon Operations Portal & WhatsApp Bot
+* **Project Title:** Customer Support Chatbot & Operational Management Portal for a Real Small Business
 * **Course:** INT428 · Artificial Intelligence Essentials (Continuous Assessment Project)
 * **Student:** Suman Saha (Solo Execution, Group 13)
 * **Real-World Small Business:** Razors-n-scissors Barber Salon (BH-5, LPU Campus, Phagwara, Punjab)
-* **Key Innovation:** Zero customer app download (Direct WhatsApp Cloud Bot via `+91 6284421638`) + Dual AI Engine (Classical Rule-Based FSM vs Dense Vector Retrieval) + Live 5s Streamlit Command Center.
+* **Key Innovation:** Zero customer app download (Direct 24/7 Cloud WhatsApp Bot) + Dual AI Engine (Classical Rule-Based FSM vs Dense Vector Retrieval) + Live 5s Streamlit Command Center.
 
 ---
 
@@ -78,7 +78,7 @@
 ---
 
 ## Slide 7: Working Interface & Cloud Deployments
-* **Channel 1 (24/7 Cloud WhatsApp Bot):** Native WhatsApp bot on Render Cloud (`+91 6284421638`) running 24/7 without needing a laptop.
+* **Channel 1 (24/7 Cloud WhatsApp Bot):** Native WhatsApp bot on Render Cloud (Protected via `WA_TARGET_PHONE`) running 24/7 without needing a laptop.
 * **Channel 2 (Live Salon Operations Dashboard):** Streamlit Cloud portal synchronizing appointments, revenue analytics, and staff handover queues every 5 seconds.
 * **Channel 3 (Multi-Device Web Pairing):** Real-time web pairing interface (`/pair`) backed by Render PostgreSQL session persistence.
 

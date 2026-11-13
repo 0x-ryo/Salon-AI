@@ -1,4 +1,5 @@
-# 💈 Razors-n-scissors — 24/7 Intelligent AI Salon Operations Portal & WhatsApp Bot
+# Customer Support Chatbot & Operational Management Portal for a Real Small Business
+### 💈 Razors-n-scissors Barber Salon (BH-5, LPU Campus) · 24/7 Intelligent AI Operations & WhatsApp Bot
 
 [![Course](https://img.shields.io/badge/Course-INT428%20AI%20Essentials-blue.svg)](https://www.lpu.in)
 [![Group](https://img.shields.io/badge/Group-13-green.svg)]()
@@ -22,7 +23,7 @@
 | **Live Operations Portal** | [salon-ai-0x-ryo.streamlit.app](https://salon-ai-0x-ryo.streamlit.app/) | Streamlit Cloud live counter dashboard, appointment scheduler, revenue analytics, and INT428 AI Lab Inspector. |
 | **24/7 Cloud Bot Gateway** | [salon-ai-backend-6xdf.onrender.com](https://salon-ai-backend-6xdf.onrender.com) | Python FastAPI + Neonize WebSocket cloud engine on Render (runs 24/7 without requiring a laptop). |
 | **WhatsApp Device Pairing** | [Pairing Screen (`/pair`)](https://salon-ai-backend-6xdf.onrender.com/pair) | Real-time multi-device pairing interface for WhatsApp salon bot. |
-| **Target Salon WhatsApp** | **`+91 6284421638`** | Real salon contact number for multi-turn appointment bookings, inquiries, and grievances. |
+| **Target Salon WhatsApp** | **`+91 XXXXX-XXXXX`** *(Protected · Configured via `WA_TARGET_PHONE`)* | Real salon contact number for multi-turn appointment bookings, inquiries, and grievances. |
 | **Persistent Storage** | **Render PostgreSQL (`salon-db`)** | Managed relational cloud database preserving multi-device session keys permanently across restarts. |
 
 ---

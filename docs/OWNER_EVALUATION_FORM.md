@@ -12,7 +12,7 @@
 * **Student Registration Number:** 12524973 (Group 13)
 * **Date of Evaluation:** November 12, 2026
 * **Deployment Channels Evaluated:**
-  * Channel 1: 24/7 Cloud WhatsApp Bot (`+91 6284421638`)
+  * Channel 1: 24/7 Cloud WhatsApp Bot (+91 XXXXX-XXXXX)
   * Channel 2: Live Salon Operations Command Center (Streamlit Cloud Dashboard)
   * Channel 3: Render Cloud FastAPI Gateway with Multi-Device WhatsApp Pairing
 
@@ -41,5 +41,5 @@
 **Verified by Salon Management:**  
 *Razors-n-scissors Operations & Styling Team*  
 BH-5, Lovely Professional University Campus, Phagwara, Punjab  
-Contact: +91 6284421638  
+Contact: +91 XXXXX-XXXXX (Protected)  
 Date: 12-11-2026

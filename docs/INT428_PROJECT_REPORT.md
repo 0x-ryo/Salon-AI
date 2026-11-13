@@ -5,7 +5,8 @@
 
 ---
 
-# Customer Support Chatbot for a Real Small Business (Barber Shop / Salon)
+# Customer Support Chatbot & Operational Management Portal for a Real Small Business (Salon / Barber Shop)
+### Razors-n-scissors Barber Salon (BH-5, LPU Campus)
 
 **Student Name:** Suman Saha  
 **Registration Number:** 12524973  

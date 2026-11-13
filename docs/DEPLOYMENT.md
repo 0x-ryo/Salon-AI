@@ -1,4 +1,5 @@
-# Deployment & Operations Guide — Razors-n-scissors AI Portal
+# Deployment & Operations Guide — Customer Support Chatbot & Operational Management Portal for a Real Small Business
+### Razors-n-scissors Barber Salon (BH-5, LPU Campus)
 **Course:** INT428 Artificial Intelligence Essentials · Group 13 · Suman Saha (Reg: 12524973)
 
 ---
@@ -11,7 +12,7 @@
 | **24/7 Cloud Bot Gateway** | Render Web Service | [salon-ai-backend-6xdf.onrender.com](https://salon-ai-backend-6xdf.onrender.com) | Python FastAPI engine running 24/7 without requiring a laptop to remain on. |
 | **Device Pairing Interface** | Render Cloud Web App | [`/pair` Pairing Screen](https://salon-ai-backend-6xdf.onrender.com/pair) | Real-time multi-device pairing interface with automatic reconnect and QR tab. |
 | **Persistent Storage** | Render PostgreSQL (`salon-db`) | Cloud Relational Database | Secure cloud database preserving multi-device session credentials across server restarts. |
-| **Target Salon WhatsApp** | Official Salon Number | **`+91 6284421638`** | Real WhatsApp Business channel for customer bookings, rate inquiries, and grievances. |
+| **Target Salon WhatsApp** | Official Salon Number | **`+91 XXXXX-XXXXX`** *(Configured via `WA_TARGET_PHONE`)* | Real WhatsApp Business channel for customer bookings, rate inquiries, and grievances. |
 
 ---
 
@@ -57,11 +58,11 @@ Evaluates Approach 1 (Rule-Based FSM) vs. Approach 2 (Semantic Retrieval) vs. th
 * **Environment Variables:**
   * `PORT=8000`
   * `DATABASE_URL`: Connection string to Render PostgreSQL (`salon-db`)
-  * `WA_TARGET_PHONE`: Target salon WhatsApp phone number (`+91 6284421638`)
+  * `WA_TARGET_PHONE`: Target salon WhatsApp phone number (configured securely in Render dashboard)
 
 ---
 
 ## 📞 Support & Salon Contact
 * **Salon:** Razors-n-scissors Barber Salon (BH-5, LPU Campus, Phagwara, Punjab)
-* **WhatsApp Channel:** `+91 6284421638`
+* **WhatsApp Channel:** Protected (Configured dynamically via `WA_TARGET_PHONE` secret)
 * **Student Developer:** Suman Saha (12524973, Group 13)
