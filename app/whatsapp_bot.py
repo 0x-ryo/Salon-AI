@@ -13,6 +13,7 @@ Handles inbound WhatsApp messages from Twilio WhatsApp Sandbox:
 import os
 import sys
 import re
+import time
 import httpx
 from fastapi import FastAPI, Request, Form
 from fastapi.responses import Response, JSONResponse, HTMLResponse
@@ -357,9 +358,11 @@ pairing_state = {
     "status": "Initializing",
     "phone": WA_TARGET_PHONE,
     "code": "",
+    "qr_raw": "",
     "connected": False,
     "error": None,
     "messages_handled": 0,
+    "code_timestamp": time.time(),
     "db": "PostgreSQL (Render Persistent)" if "postgres" in NEONIZE_DB else "SQLite"
 }
 
@@ -378,71 +381,81 @@ def _run_neonize_gateway():
         print(f"[Neonize Setup Notice]: {e}")
         return
 
-    try:
-        print(f"[Neonize Gateway]: Starting client with phone +{WA_TARGET_PHONE}...")
-        client = NewClient(NEONIZE_DB)
-        _neonize_client = client
+    while True:
+        try:
+            if pairing_state.get("connected"):
+                time.sleep(5)
+                continue
 
-        @client.qr
-        def on_qr(c: NewClient, qr_data: bytes):
-            try:
-                if not c.is_logged_in:
-                    try:
-                        code = c.PairPhone(WA_TARGET_PHONE, show_push_notification=True)
-                        pairing_state["code"] = code
-                        pairing_state["status"] = "Ready to Pair"
-                        print("==================================================")
-                        print(f"[WhatsApp Pairing Code]: {code} (for +{WA_TARGET_PHONE})")
-                        print("==================================================")
-                    except Exception as err:
-                        pairing_state["error"] = str(err)
-                        pairing_state["status"] = "Pair Error"
-                        print(f"[Neonize PairPhone Error]: {err}")
-            except Exception as outer_err:
-                pairing_state["error"] = str(outer_err)
-                print(f"[Neonize on_qr Error]: {outer_err}")
+            print(f"[Neonize Gateway]: Starting client with phone +{WA_TARGET_PHONE}...")
+            client = NewClient(NEONIZE_DB)
+            _neonize_client = client
 
-        @client.event(ConnectedEv)
-        def on_connected(c: NewClient, ev: ConnectedEv):
-            pairing_state["connected"] = True
-            pairing_state["status"] = "Connected"
-            pairing_state["error"] = None
-            print(f"🎉 [WhatsApp Cloud Gateway]: Live & Connected 24/7 as +{WA_TARGET_PHONE}!")
+            @client.qr
+            def on_qr(c: NewClient, qr_data: bytes):
+                try:
+                    raw_qr = qr_data.decode("utf-8", errors="ignore")
+                    pairing_state["qr_raw"] = raw_qr
+                    if not c.is_logged_in:
+                        try:
+                            code = c.PairPhone(WA_TARGET_PHONE, show_push_notification=True)
+                            pairing_state["code"] = code
+                            pairing_state["status"] = "Ready to Pair"
+                            pairing_state["code_timestamp"] = time.time()
+                            print("==================================================")
+                            print(f"[WhatsApp Pairing Code]: {code} (for +{WA_TARGET_PHONE})")
+                            print("==================================================")
+                        except Exception as err:
+                            pairing_state["error"] = str(err)
+                            print(f"[Neonize PairPhone Error]: {err}")
+                except Exception as outer_err:
+                    pairing_state["error"] = str(outer_err)
+                    print(f"[Neonize on_qr Error]: {outer_err}")
 
-        @client.event(PairStatusEv)
-        def on_pair_status(c: NewClient, ev: PairStatusEv):
-            print(f"[Neonize PairStatus]: {ev}")
+            @client.event(ConnectedEv)
+            def on_connected(c: NewClient, ev: ConnectedEv):
+                pairing_state["connected"] = True
+                pairing_state["status"] = "Connected"
+                pairing_state["error"] = None
+                print(f"🎉 [WhatsApp Cloud Gateway]: Live & Connected 24/7 as +{WA_TARGET_PHONE}!")
 
-        @client.event(MessageEv)
-        def on_message(c: NewClient, msg: MessageEv):
-            try:
-                if msg.Info.MessageSource.IsFromMe:
-                    return
+            @client.event(PairStatusEv)
+            def on_pair_status(c: NewClient, ev: PairStatusEv):
+                print(f"[Neonize PairStatus]: {ev}")
 
-                body_text = extract_text(msg.Message)
-                if not body_text:
-                    return
+            @client.event(MessageEv)
+            def on_message(c: NewClient, msg: MessageEv):
+                try:
+                    if msg.Info.MessageSource.IsFromMe:
+                        return
 
-                sender_user = msg.Info.MessageSource.Sender.User or ""
-                profile_name = msg.Info.Pushname or ""
+                    body_text = extract_text(msg.Message)
+                    if not body_text:
+                        return
 
-                print(f"[WhatsApp Inbound]: +{sender_user} ({profile_name}): '{body_text}'")
-                result = handle_whatsapp_message(sender_user, body_text, profile_name)
-                reply_text = result.get("reply", "")
+                    sender_user = msg.Info.MessageSource.Sender.User or ""
+                    profile_name = msg.Info.Pushname or ""
 
-                if reply_text:
-                    c.reply_message(reply_text, msg)
-                    pairing_state["messages_handled"] += 1
-                    print(f"[WhatsApp Reply Sent]: '{reply_text[:60]}...'")
-            except Exception as mex:
-                print(f"[WhatsApp Message Error]: {mex}")
+                    print(f"[WhatsApp Inbound]: +{sender_user} ({profile_name}): '{body_text}'")
+                    result = handle_whatsapp_message(sender_user, body_text, profile_name)
+                    reply_text = result.get("reply", "")
 
-        pairing_state["status"] = "Connecting..."
-        client.connect()
-    except Exception as ce:
-        pairing_state["status"] = "Error"
-        pairing_state["error"] = str(ce)
-        print(f"[Neonize Client Run Error]: {ce}")
+                    if reply_text:
+                        c.reply_message(reply_text, msg)
+                        pairing_state["messages_handled"] += 1
+                        print(f"[WhatsApp Reply Sent]: '{reply_text[:60]}...'")
+                except Exception as mex:
+                    print(f"[WhatsApp Message Error]: {mex}")
+
+            pairing_state["status"] = "Connecting..."
+            client.connect()
+            print("[Neonize Gateway]: Connect session ended, restarting in 3s...")
+        except Exception as ce:
+            pairing_state["status"] = "Error"
+            pairing_state["error"] = str(ce)
+            print(f"[Neonize Client Run Error]: {ce}")
+
+        time.sleep(3)
 
 
 # Start gateway thread on startup
@@ -459,17 +472,25 @@ def api_pair_status():
 
 @app.post("/api/pair-refresh")
 def api_pair_refresh():
-    """Manually requests a fresh 8-digit pairing code."""
+    """Manually requests a fresh 8-digit pairing code or triggers reconnect."""
     global _neonize_client
-    if _neonize_client and not pairing_state["connected"]:
+    if pairing_state.get("connected"):
+        return {"success": False, "message": "Already connected 24/7"}
+
+    if _neonize_client:
         try:
             code = _neonize_client.PairPhone(WA_TARGET_PHONE, show_push_notification=True)
             pairing_state["code"] = code
             pairing_state["status"] = "Ready to Pair"
+            pairing_state["code_timestamp"] = time.time()
             return {"success": True, "code": code}
         except Exception as e:
-            return {"success": False, "error": str(e)}
-    return {"success": False, "error": "Client not ready or already connected"}
+            try:
+                _neonize_client.disconnect()
+            except Exception:
+                pass
+            return {"success": False, "error": str(e), "message": "Reconnecting gateway..."}
+    return {"success": False, "error": "Gateway starting up"}
 
 
 @app.get("/pair", response_class=HTMLResponse)
@@ -508,9 +529,9 @@ def pair_page():
             background: var(--card-bg);
             border: 1px solid var(--border);
             border-radius: 20px;
-            max-width: 480px;
+            max-width: 500px;
             width: 100%;
-            padding: 32px 28px;
+            padding: 30px 24px;
             box-shadow: 0 12px 40px rgba(0,0,0,0.6);
             text-align: center;
         }}
@@ -524,32 +545,32 @@ def pair_page():
             font-size: 0.8rem;
             font-weight: 700;
             letter-spacing: 0.5px;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
         }}
         h1 {{
-            font-size: 1.6rem;
+            font-size: 1.5rem;
             font-weight: 800;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
             color: #FFFFFF;
         }}
         .subtitle {{
             color: var(--text-sub);
-            font-size: 0.9rem;
-            margin-bottom: 24px;
+            font-size: 0.85rem;
+            margin-bottom: 16px;
         }}
         .code-box {{
             background: #090D12;
             border: 2px dashed var(--gold);
             border-radius: 14px;
-            padding: 20px 16px;
-            margin: 20px 0;
+            padding: 18px 12px;
+            margin: 14px 0;
         }}
         .code-label {{
             font-size: 0.75rem;
             text-transform: uppercase;
             letter-spacing: 1px;
             color: var(--gold-light);
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }}
         .code-display {{
             font-family: 'JetBrains Mono', monospace;
@@ -559,15 +580,34 @@ def pair_page():
             color: var(--gold);
             user-select: all;
         }}
+        .timer {{
+            font-size: 0.8rem;
+            color: #F59E0B;
+            margin-top: 6px;
+            font-weight: 600;
+        }}
+        .qr-container {{
+            background: #FFFFFF;
+            padding: 12px;
+            border-radius: 14px;
+            display: inline-block;
+            margin: 12px auto;
+            border: 2px solid var(--gold);
+        }}
+        .qr-container img {{
+            display: block;
+            width: 200px;
+            height: 200px;
+        }}
         .status-badge {{
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            padding: 8px 16px;
+            padding: 6px 14px;
             border-radius: 999px;
-            font-size: 0.85rem;
+            font-size: 0.82rem;
             font-weight: 600;
-            margin: 12px 0 20px 0;
+            margin: 8px 0 14px 0;
         }}
         .status-waiting {{
             background: rgba(245, 158, 11, 0.15);
@@ -584,37 +624,67 @@ def pair_page():
             color: #000;
             font-weight: 700;
             border: none;
-            padding: 12px 24px;
-            border-radius: 12px;
+            padding: 11px 20px;
+            border-radius: 10px;
             cursor: pointer;
             width: 100%;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             transition: all 0.2s ease;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
         }}
         .btn:hover {{
             filter: brightness(1.1);
             transform: translateY(-1px);
         }}
+        .btn-outline {{
+            background: transparent;
+            color: var(--gold);
+            border: 1px solid var(--gold);
+            margin-bottom: 14px;
+        }}
+        .btn-outline:hover {{
+            background: rgba(212, 175, 55, 0.15);
+        }}
         .instructions {{
             text-align: left;
             background: rgba(255, 255, 255, 0.03);
             border-radius: 12px;
-            padding: 16px;
-            margin-top: 20px;
-            font-size: 0.85rem;
+            padding: 14px 16px;
+            margin-top: 14px;
+            font-size: 0.82rem;
             color: #C9D1D9;
-            line-height: 1.6;
+            line-height: 1.5;
         }}
         .instructions ol {{
-            margin-left: 20px;
+            margin-left: 18px;
         }}
         .instructions li {{
-            margin-bottom: 6px;
+            margin-bottom: 4px;
+        }}
+        .tabs {{
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }}
+        .tab-btn {{
+            flex: 1;
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: #111418;
+            color: var(--text-sub);
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.82rem;
+        }}
+        .tab-btn.active {{
+            background: rgba(212, 175, 55, 0.15);
+            border-color: var(--gold);
+            color: var(--gold);
         }}
         .footer {{
-            margin-top: 24px;
-            font-size: 0.75rem;
+            margin-top: 20px;
+            font-size: 0.72rem;
             color: var(--text-sub);
         }}
     </style>
@@ -629,22 +699,51 @@ def pair_page():
             <span>●</span> <span id="statusText">Checking WhatsApp Cloud Status...</span>
         </div>
 
-        <div class="code-box" id="codeContainer">
-            <div class="code-label">Enter this 8-Character Pairing Code:</div>
-            <div class="code-display" id="codeText">••••••••</div>
+        <div class="tabs" id="tabGroup">
+            <button class="tab-btn active" id="tabCodeBtn" onclick="switchTab('code')">🔢 8-Digit Code</button>
+            <button class="tab-btn" id="tabQrBtn" onclick="switchTab('qr')">📷 QR Code Scan</button>
         </div>
 
-        <button class="btn" id="copyBtn" onclick="copyCode()">📋 Copy Pairing Code</button>
+        <!-- CODE TAB -->
+        <div id="codeView">
+            <div class="code-box" id="codeContainer">
+                <div class="code-label">Enter this 8-Character Pairing Code:</div>
+                <div class="code-display" id="codeText">••••••••</div>
+                <div class="timer" id="timerDisplay">⏱️ Code valid for: <span id="secondsLeft">90</span>s</div>
+            </div>
 
-        <div class="instructions">
-            <strong>📲 How to link on your phone:</strong>
-            <ol>
-                <li>Open <strong>WhatsApp</strong> on your phone (<code>+{WA_TARGET_PHONE}</code>).</li>
-                <li>Tap <strong>Settings</strong> (or ⋮ <strong>3 dots</strong>) ➔ <strong>Linked Devices</strong>.</li>
-                <li>Tap <strong>Link a Device</strong>.</li>
-                <li>Tap <strong>"Link with phone number instead"</strong> at the bottom.</li>
-                <li>Enter the code above!</li>
-            </ol>
+            <button class="btn" id="copyBtn" onclick="copyCode()">📋 Copy Pairing Code</button>
+            <button class="btn btn-outline" id="refreshBtn" onclick="refreshCode()">🔄 Generate Fresh Code</button>
+
+            <div class="instructions">
+                <strong>📲 How to link with Code:</strong>
+                <ol>
+                    <li>Open <strong>WhatsApp / WhatsApp Business</strong> on your phone.</li>
+                    <li>Tap <strong>Settings</strong> (or ⋮ <strong>3 dots</strong>) ➔ <strong>Linked Devices</strong>.</li>
+                    <li>Tap <strong>Link a Device</strong>.</li>
+                    <li>Tap <strong>"Link with phone number instead"</strong> at the bottom.</li>
+                    <li>Enter the code above!</li>
+                </ol>
+            </div>
+        </div>
+
+        <!-- QR TAB -->
+        <div id="qrView" style="display: none;">
+            <div class="qr-container" id="qrContainer">
+                <img id="qrImg" src="" alt="WhatsApp QR Code" />
+            </div>
+            <p style="font-size: 0.8rem; color: var(--text-sub); margin-bottom: 12px;">Point your phone camera at this QR code</p>
+            <button class="btn btn-outline" onclick="refreshCode()">🔄 Refresh QR Code</button>
+
+            <div class="instructions">
+                <strong>📷 How to link with QR:</strong>
+                <ol>
+                    <li>Open <strong>WhatsApp Business</strong> on your phone.</li>
+                    <li>Tap <strong>Settings / ⋮</strong> ➔ <strong>Linked Devices</strong>.</li>
+                    <li>Tap <strong>Link a Device</strong>.</li>
+                    <li>Point camera at the QR code above to link instantly!</li>
+                </ol>
+            </div>
         </div>
 
         <div class="footer">
@@ -654,6 +753,43 @@ def pair_page():
 
     <script>
         let currentCode = "";
+        let codeTime = 0;
+        let countdownTimer = null;
+
+        function switchTab(mode) {{
+            const codeView = document.getElementById('codeView');
+            const qrView = document.getElementById('qrView');
+            const tabCodeBtn = document.getElementById('tabCodeBtn');
+            const tabQrBtn = document.getElementById('tabQrBtn');
+
+            if (mode === 'code') {{
+                codeView.style.display = 'block';
+                qrView.style.display = 'none';
+                tabCodeBtn.className = 'tab-btn active';
+                tabQrBtn.className = 'tab-btn';
+            }} else {{
+                codeView.style.display = 'none';
+                qrView.style.display = 'block';
+                tabCodeBtn.className = 'tab-btn';
+                tabQrBtn.className = 'tab-btn active';
+            }}
+        }}
+
+        function startCountdown() {{
+            if (countdownTimer) clearInterval(countdownTimer);
+            const secondsLeftSpan = document.getElementById('secondsLeft');
+            countdownTimer = setInterval(() => {{
+                const elapsed = Math.floor(Date.now() / 1000) - codeTime;
+                const remaining = Math.max(0, 100 - elapsed);
+                secondsLeftSpan.innerText = remaining;
+                if (remaining <= 0) {{
+                    document.getElementById('timerDisplay').innerText = "⚠️ Code expired! Click 'Generate Fresh Code'";
+                }} else {{
+                    document.getElementById('timerDisplay').innerHTML = `⏱️ Code valid for: <strong>${{remaining}}</strong>s`;
+                }}
+            }}, 1000);
+        }}
+
         async function checkStatus() {{
             try {{
                 const res = await fetch('/api/pair-status');
@@ -662,6 +798,7 @@ def pair_page():
                 const statusText = document.getElementById('statusText');
                 const codeText = document.getElementById('codeText');
                 const copyBtn = document.getElementById('copyBtn');
+                const qrImg = document.getElementById('qrImg');
 
                 if (data.connected) {{
                     badge.className = "status-badge status-connected";
@@ -670,18 +807,41 @@ def pair_page():
                     codeText.style.fontSize = "1.8rem";
                     codeText.style.color = "#3FB950";
                     copyBtn.style.display = "none";
+                    document.getElementById('refreshBtn').style.display = "none";
+                    document.getElementById('timerDisplay').style.display = "none";
+                    document.getElementById('tabGroup').style.display = "none";
                 }} else if (data.code) {{
-                    currentCode = data.code;
-                    codeText.innerText = data.code;
+                    if (data.code !== currentCode) {{
+                        currentCode = data.code;
+                        codeText.innerText = data.code;
+                        codeTime = Math.floor(data.code_timestamp || (Date.now() / 1000));
+                        startCountdown();
+                    }}
                     badge.className = "status-badge status-waiting";
                     statusText.innerText = "Ready to Pair (Waiting for phone)";
                     copyBtn.style.display = "block";
+
+                    if (data.qr_raw) {{
+                        qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${{encodeURIComponent(data.qr_raw)}}`;
+                    }}
                 }} else {{
-                    statusText.innerText = data.status || "Initializing Gateway...";
+                    statusText.innerText = data.status || "Connecting to Gateway...";
                 }}
             }} catch (e) {{
                 console.error("Status poll error:", e);
             }}
+        }}
+
+        async function refreshCode() {{
+            const btn = document.getElementById('refreshBtn');
+            btn.innerText = "⏳ Generating Fresh Code...";
+            try {{
+                await fetch('/api/pair-refresh', {{ method: 'POST' }});
+                setTimeout(checkStatus, 1500);
+            }} catch (e) {{
+                console.error("Refresh error:", e);
+            }}
+            setTimeout(() => {{ btn.innerText = "🔄 Generate Fresh Code"; }}, 3000);
         }}
 
         function copyCode() {{
@@ -693,7 +853,7 @@ def pair_page():
             }});
         }}
 
-        setInterval(checkStatus, 3000);
+        setInterval(checkStatus, 2500);
         checkStatus();
     </script>
 </body>
