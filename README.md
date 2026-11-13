@@ -21,8 +21,8 @@
 | :--- | :--- | :--- |
 | **Live Operations Portal** | [salon-ai-0x-ryo.streamlit.app](https://salon-ai-0x-ryo.streamlit.app/) | Streamlit Cloud live counter dashboard, appointment scheduler, revenue analytics, and INT428 AI Lab Inspector. |
 | **24/7 Cloud Bot Gateway** | [salon-ai-backend-6xdf.onrender.com](https://salon-ai-backend-6xdf.onrender.com) | Python FastAPI + Neonize WebSocket cloud engine on Render (runs 24/7 without requiring a laptop). |
-| **WhatsApp Device Pairing** | [Pairing Screen (`/pair`)](https://salon-ai-backend-6xdf.onrender.com/pair) | Real-time multi-device pairing interface for WhatsApp phone number `+91 6284421638`. |
-| **Target Salon WhatsApp** | **`+91 6284421638`** | Real salon contact number for multi-turn appointment bookings, inquiries, and grievances. |
+| **WhatsApp Device Pairing** | [Pairing Screen (`/pair`)](https://salon-ai-backend-6xdf.onrender.com/pair) | Real-time multi-device pairing interface for WhatsApp salon bot. |
+| **Target Salon WhatsApp** | **`+91 9877175449`** | Real salon contact number for multi-turn appointment bookings, inquiries, and grievances. |
 | **Persistent Storage** | **Render PostgreSQL (`salon-db`)** | Managed relational cloud database preserving multi-device session keys permanently across restarts. |
 
 ---
@@ -33,7 +33,7 @@ Barber salons and grooming parlors experience continuous operational interruptio
 
 This project delivers an enterprise-grade, **zero-cost, 24/7 cloud-native AI customer support and operational portal** custom-built for **Razors-n-scissors Salon**:
 
-1. **Zero Customer Friction (Real WhatsApp Number `+91 6284421638`):** Customers interact directly through WhatsApp using natural language without downloading any app or joining restrictive developer sandboxes.
+1. **Zero Customer Friction (Direct WhatsApp Connectivity):** Customers interact directly through WhatsApp using natural language without downloading any app or joining restrictive developer sandboxes.
 2. **24/7 Autonomous Cloud Execution (Zero Laptop Dependency):** Deployed on Render with native WebSocket bindings (`neonize`) and PostgreSQL persistent storage, allowing the bot to run continuously even when the owner's computer is turned off.
 3. **Dual AI Implementation (INT428 Academic Mandate):** Formally implements and benchmarks **Approach 1 (Classical Rule-Based FSM Slot-Filler)** vs. **Approach 2 (Dense Sentence-Transformers Semantic Retrieval)** alongside a **Hybrid Production Agent**.
 4. **Live Real-Time Dashboard Sync:** Streamlit Cloud dashboard synchronizes appointments, metrics, revenue KPIs, and staff escalation queues from the Render cloud backend every 5 seconds.
@@ -46,7 +46,7 @@ This project delivers an enterprise-grade, **zero-cost, 24/7 cloud-native AI cus
 ```mermaid
 flowchart TD
     subgraph WhatsApp_Channel ["Customer WhatsApp Channel - 24/7 Cloud"]
-        CLIENT["Customer Mobile WhatsApp - Messages to +91 6284421638"]
+        CLIENT["Customer Mobile WhatsApp - Direct Chat with Salon"]
         WSS["WhatsApp Multi-Device Gateway - Pure Python Neonize / WebSockets"]
     end
 

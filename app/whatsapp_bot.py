@@ -301,7 +301,7 @@ async def api_book_appointment(request: Request):
         from database.db import book_appointment
         success, msg, app_id = book_appointment(
             customer_name=data.get("customer_name", "Walk-in"),
-            phone=data.get("phone", "916284421638"),
+            phone=data.get("phone", PHONE_WHATSAPP.replace("+", "").replace(" ", "")),
             service_id=data.get("service_id", 1),
             barber_id=data.get("barber_id", 1),
             date_str=data.get("date_str", "2026-11-14"),
@@ -344,12 +344,13 @@ async def api_resolve_complaint(request: Request):
 # ================= REAL-NUMBER WHATSAPP CLOUD GATEWAY (NEONIZE) =================
 import threading
 
-WA_TARGET_PHONE = os.environ.get("WA_TARGET_PHONE", "916284421638")
-RENDER_PG_FALLBACK = "postgresql://salon_admin:ASpruX53ItfNXxv6c8GS0paVjHWB5wJ2@dpg-dbrlnuutlv9c73b12640-a.oregon-postgres.render.com/salon_ai_jwbg"
-NEONIZE_DB = os.environ.get("DATABASE_URL", RENDER_PG_FALLBACK)
-
-# Convert postgresql:// to postgres:// for Go lib/pq driver
-if NEONIZE_DB.startswith("postgresql://"):
+WA_TARGET_PHONE = os.environ.get("WA_TARGET_PHONE", PHONE_WHATSAPP.replace("+", "").replace(" ", ""))
+NEONIZE_DB = os.environ.get("DATABASE_URL", "")
+if not NEONIZE_DB:
+    # Local fallback to SQLite database file
+    NEONIZE_DB = os.path.join(PROJECT_ROOT, "database", "neonize_session.sqlite3")
+elif NEONIZE_DB.startswith("postgresql://"):
+    # Convert postgresql:// to postgres:// for Go lib/pq driver
     NEONIZE_DB = NEONIZE_DB.replace("postgresql://", "postgres://", 1)
 
 pairing_state = {

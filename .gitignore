@@ -1,0 +1,28 @@
+# Python Bytecode & Caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Environments & Sensitive Configs
+.env
+.env.local
+*.log
+
+# Databases & Session Stores
+*.db
+*.sqlite3
+whatsapp_session/
+neonize_session/
+
+# Local Utilities, Binaries & Automation Scripts with Tokens
+cloudflared.exe
+*.exe
+commit_and_push.py
+sync_and_push.py
+push_to_github.py
+setup_git_history.py
+
+# OS Metadata
+.DS_Store
+Thumbs.db

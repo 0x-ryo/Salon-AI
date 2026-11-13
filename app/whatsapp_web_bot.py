@@ -1,9 +1,9 @@
 """
-Razors-n-scissors — Real WhatsApp Number Automation Bot (+91 6284421638)
+Razors-n-scissors — Real WhatsApp Number Automation Bot
 INT428 Course Project (Group 13 - Suman Saha | Reg: 12524973)
 
 Runs WhatsApp Web automation using Selenium:
-- Pairs directly with phone number +91 6284421638 via WhatsApp 8-digit Pairing Code
+- Pairs directly with phone number via WhatsApp 8-digit Pairing Code
 - Zero Facebook account needed, zero Twilio cost
 - Listens for inbound customer messages
 - Passes them to HybridSalonAgent (Interactive Menu, Slot-filling, Semantic Retrieval)
@@ -38,7 +38,7 @@ except ImportError:
     print("Selenium or webdriver-manager not found. Please install via pip.")
     sys.exit(1)
 
-TARGET_PHONE = "916284421638"
+TARGET_PHONE = os.environ.get("WA_TARGET_PHONE", "919877175449")
 SESSION_DIR = os.path.join(PROJECT_ROOT, "whatsapp_session")
 
 def get_driver():
@@ -136,7 +136,7 @@ def request_pairing_code(driver, phone_number):
             print(f"👉   >>>  {formatted}  <<<")
             print("=" * 65)
             print("Steps on your phone:")
-            print("1. Open WhatsApp on +91 6284421638")
+            print(f"1. Open WhatsApp on +{phone_number}")
             print("2. Tap ⋮ (Three dots) > Linked Devices > Link a Device")
             print("3. Tap 'Link with phone number instead'")
             print(f"4. Enter code: {formatted}")
@@ -170,7 +170,7 @@ def run_whatsapp_listener():
             time.sleep(3)
 
     print("\n" + "=" * 60)
-    print(f"🎉 WHATSAPP BOT IS LIVE ON +91 6284421638!")
+    print(f"🎉 WHATSAPP BOT IS LIVE ON +{TARGET_PHONE}!")
     print("Listening for incoming messages in real-time...")
     print("=" * 60 + "\n")
 
