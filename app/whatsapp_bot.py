@@ -384,18 +384,22 @@ def _run_neonize_gateway():
 
         @client.qr
         def on_qr(c: NewClient, qr_data: bytes):
-            if not c.is_logged_in():
-                try:
-                    code = c.PairPhone(WA_TARGET_PHONE, show_push_notification=True)
-                    pairing_state["code"] = code
-                    pairing_state["status"] = "Ready to Pair"
-                    print("==================================================")
-                    print(f"[WhatsApp Pairing Code]: {code} (for +{WA_TARGET_PHONE})")
-                    print("==================================================")
-                except Exception as err:
-                    pairing_state["error"] = str(err)
-                    pairing_state["status"] = "Pair Error"
-                    print(f"[Neonize PairPhone Error]: {err}")
+            try:
+                if not c.is_logged_in:
+                    try:
+                        code = c.PairPhone(WA_TARGET_PHONE, show_push_notification=True)
+                        pairing_state["code"] = code
+                        pairing_state["status"] = "Ready to Pair"
+                        print("==================================================")
+                        print(f"[WhatsApp Pairing Code]: {code} (for +{WA_TARGET_PHONE})")
+                        print("==================================================")
+                    except Exception as err:
+                        pairing_state["error"] = str(err)
+                        pairing_state["status"] = "Pair Error"
+                        print(f"[Neonize PairPhone Error]: {err}")
+            except Exception as outer_err:
+                pairing_state["error"] = str(outer_err)
+                print(f"[Neonize on_qr Error]: {outer_err}")
 
         @client.event(ConnectedEv)
         def on_connected(c: NewClient, ev: ConnectedEv):
