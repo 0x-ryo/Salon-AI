@@ -1,4 +1,4 @@
-# 💈 Razors-n-scissors — 24/7 Intelligent AI Salon Operations Portal & WhatsApp Bot
+# 💈 Customer Support Chatbot & Operational Management Portal for a Real Small Business
 
 [![Course](https://img.shields.io/badge/Course-INT428%20AI%20Foundations-blue.svg)](https://www.lpu.in)
 [![Group](https://img.shields.io/badge/Group-13-green.svg)]()
@@ -10,7 +10,7 @@
 
 > **Continuous Assessment (CA) Capstone Project**  
 > **Course:** INT428: Artificial Intelligence Foundations · Lovely Professional University  
-> **Allocated Topic (Group 13):** *Customer Support Chatbot & Operational Management Portal for a Real Small Business (Salon / Barber Shop)*  
+> **Allocated Topic (Group 13):** *Customer Support Chatbot & Operational Management Portal for a Real Small Business*  
 > **Target Enterprise:** **Razors-n-scissors Barber Salon**, BH-5, Lovely Professional University Campus, Phagwara, Punjab.
 
 ---
@@ -140,8 +140,8 @@ If an inquiry cannot be resolved or the customer expresses frustration, the bot 
 
 ### 1. Clone & Install Dependencies
 ```bash
-git clone https://github.com/0x-ryo/Salon-AI.git
-cd Salon-AI
+git clone https://github.com/0x-ryo/Chatbot.git
+cd Chatbot
 pip install -r requirements.txt
 ```
 
@@ -169,7 +169,7 @@ Navigate to [http://localhost:8000/pair](http://localhost:8000/pair) to view the
 ## 📁 Repository Directory Structure
 
 ```
-Salon-AI/
+Chatbot/
 ├── app/
 │   ├── app.py                 # Streamlit Cloud Operations Portal (5s Live Sync)
 │   ├── whatsapp_bot.py        # 24/7 Cloud Gateway (Neonize + FastAPI + /pair)

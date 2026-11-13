@@ -52,7 +52,7 @@ from benchmark.evaluate import run_benchmark, RESULTS_PATH
 
 # Page Configuration
 st.set_page_config(
-    page_title=f"{SALON_NAME} | Salon Operations Portal",
+    page_title="Customer Support Chatbot & Operational Management Portal for a Real Small Business",
     page_icon="💈",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -200,8 +200,8 @@ if "last_refresh_time" not in st.session_state:
 # ----------------- SIDEBAR -----------------
 with st.sidebar:
     st.image("https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=400&q=80", use_container_width=True)
-    st.title(f"💈 {SALON_NAME}")
-    st.caption("Salon Counter Portal & Operational Command Center")
+    st.title("Customer Support Chatbot & Operational Management Portal")
+    st.caption("For a Real Small Business (Razors-n-scissors)")
     st.markdown("**Student:** Suman Saha (Reg: 12524973)")
     st.markdown("**Course:** INT428 · AI Foundations (Group 13)")
 
@@ -248,7 +248,7 @@ tab_owner, tab_ai_lab = st.tabs([
 with tab_owner:
     header_col1, header_col2 = st.columns([3, 1])
     with header_col1:
-        st.markdown(f"### 📊 {SALON_NAME} — Salon Operations & Live Bookings")
+        st.markdown(f"### 📊 Customer Support Chatbot & Operational Management Portal for a Real Small Business")
         st.caption(f"Real-time counter tablet portal for {ADDRESS}.")
     with header_col2:
         if live_data["source"] == "LIVE_CLOUD":
