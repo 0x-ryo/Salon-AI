@@ -45,31 +45,31 @@ This project delivers an enterprise-grade, **zero-cost, 24/7 cloud-native AI cus
 
 ```mermaid
 flowchart TD
-    subgraph WhatsApp_Cloud["Customer WhatsApp Channel (24/7 Cloud)"]
-        CLIENT["📱 Customer Mobile WhatsApp<br/>(Messages to +91 6284421638)"]
-        WSS["🌐 WhatsApp Multi-Device Gateway<br/>(Pure Python Neonize / WebSockets)"]
+    subgraph WhatsApp_Channel ["Customer WhatsApp Channel - 24/7 Cloud"]
+        CLIENT["Customer Mobile WhatsApp - Messages to +91 6284421638"]
+        WSS["WhatsApp Multi-Device Gateway - Pure Python Neonize / WebSockets"]
     end
 
-    subgraph Render_Cloud_Engine["Render 24/7 Cloud Backend (salon-ai-backend)"]
-        FASTAPI["⚡ FastAPI Webhook & REST APIs<br/>(/health, /pair, /api/metrics, /api/appointments)"]
+    subgraph Cloud_Backend ["Render 24/7 Cloud Backend - salon-ai-backend"]
+        FASTAPI["FastAPI Webhook and REST APIs - /health, /pair, /api/metrics"]
         
-        subgraph AI_Core["Hybrid Salon AI Core (INT428)"]
-            GUARD["🛡️ Responsible AI Guardrails<br/>• DPDP PII Redaction<br/>• Medical Safety Refusal<br/>• Prompt Injection Filter"]
+        subgraph AI_Core ["Hybrid Salon AI Core - INT428"]
+            GUARD["Responsible AI Guardrails - DPDP PII Redaction, Medical Safety"]
             ROUTER{"Intent Router"}
-            APP1["Approach 1: Classical AI<br/>• Regex Intent Classifier<br/>• Finite State Machine (FSM)<br/>• Slot-Filling Dialog Tracker"]
-            APP2["Approach 2: Modern AI<br/>• Sentence-Transformers (MiniLM)<br/>• TF-IDF Vector Space<br/>• Grounded Retrieval"]
-            XAI["🔍 Explainability Trace Engine<br/>• Confidence & Decision Logs"]
+            APP1["Approach 1: Classical AI - Regex and FSM Dialog Tracker"]
+            APP2["Approach 2: Modern AI - Sentence-Transformers MiniLM"]
+            XAI["Explainability Trace Engine - Confidence and Decision Logs"]
         end
         
-        SQLITE[("💾 Local SQLite Cache<br/>(salon.db WAL Mode)")]
+        SQLITE[("Local SQLite Cache - salon.db WAL Mode")]
     end
 
-    subgraph Cloud_Persistence["Cloud Persistence Layer"]
-        PG[("🐘 Render PostgreSQL (salon-db)<br/>• Persistent WhatsApp Multi-Device Session<br/>• Identity Keys & Protocol States")]
+    subgraph Cloud_Storage ["Cloud Persistence Layer"]
+        PG[("Render PostgreSQL - salon-db Persistent Session Keys")]
     end
 
-    subgraph Salon_Counter_Portal["Live Salon Operations Command Center"]
-        DASH["📊 Streamlit Cloud Dashboard<br/>(salon-ai-0x-ryo.streamlit.app)<br/>• 5-Sec Auto Polling<br/>• Luxury Gold UI/UX<br/>• Appointments, Revenue, Complaints"]
+    subgraph Operations_Portal ["Live Salon Operations Command Center"]
+        DASH["Streamlit Cloud Dashboard - 5s Auto Sync Luxury Gold UI"]
     end
 
     CLIENT <-->|E2EE Messages| WSS
@@ -77,14 +77,14 @@ flowchart TD
     FASTAPI --> GUARD
     GUARD --> ROUTER
     ROUTER -->|Transactional Bookings| APP1
-    ROUTER -->|FAQs & Services| APP2
+    ROUTER -->|FAQs and Services| APP2
     APP1 <--> SQLITE
     APP2 <--> SQLITE
     APP1 --> XAI
     APP2 --> XAI
     XAI --> FASTAPI
     WSS <-->|Session Sync| PG
-    FASTAPI <-->|REST JSON Sync (5s Polling)| DASH
+    FASTAPI <-->|REST JSON Sync - 5s Polling| DASH
 ```
 
 ---
