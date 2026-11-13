@@ -20,7 +20,9 @@ class SemanticSalonRetriever:
     Semantic Retrieval Engine for FAQ & Domain Question Answering.
     Supports both TF-IDF Vector Space Model and Dense Embeddings.
     """
-    def __init__(self, use_dense_embeddings=True):
+    def __init__(self, use_dense_embeddings=None):
+        if use_dense_embeddings is None:
+            use_dense_embeddings = os.environ.get("USE_DENSE_EMBEDDINGS", "false").lower() in ("1", "true")
         self.use_dense = use_dense_embeddings
         self.documents = []
         self.doc_metadata = []
@@ -150,10 +152,12 @@ class SemanticSalonRetriever:
             })
         return results
 
-    def query(self, user_query: str, threshold=0.35) -> dict:
+    def query(self, user_query: str, threshold=None) -> dict:
         """
         Executes semantic retrieval with confidence score and explainability provenance.
         """
+        if threshold is None:
+            threshold = 0.35 if self.use_dense else 0.12
         # Get both dense and tf-idf for comparative analysis
         dense_results = self.retrieve_dense(user_query, top_k=3)
         tfidf_results = self.retrieve_tfidf(user_query, top_k=3)

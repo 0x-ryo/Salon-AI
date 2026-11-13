@@ -7,12 +7,24 @@ Connects:
 4. Automatic Latency Measurement & Audit Logging
 """
 
+import os
 import time
 import uuid
 from engine.guardrails import check_safety_guardrails, redact_pii
 from engine.rule_engine import RuleBasedSalonChatbot
 from engine.semantic_engine import SemanticSalonRetriever
 from database.db import log_chat_interaction, add_to_handover_queue
+
+_SHARED_SEMANTIC_ENGINE = None
+
+def get_shared_semantic_engine(use_dense_embeddings=None):
+    """Singleton getter for semantic retriever to conserve memory in cloud."""
+    global _SHARED_SEMANTIC_ENGINE
+    if _SHARED_SEMANTIC_ENGINE is None:
+        if use_dense_embeddings is None:
+            use_dense_embeddings = os.environ.get("USE_DENSE_EMBEDDINGS", "false").lower() in ("1", "true")
+        _SHARED_SEMANTIC_ENGINE = SemanticSalonRetriever(use_dense_embeddings=use_dense_embeddings)
+    return _SHARED_SEMANTIC_ENGINE
 
 
 class HybridSalonAgent:
@@ -21,9 +33,9 @@ class HybridSalonAgent:
     Provides dynamic engine switching (Rule-Based vs Semantic vs Hybrid)
     and full explainability trace generation for INT428 evaluation.
     """
-    def __init__(self):
+    def __init__(self, semantic_engine=None):
         self.rule_engine = RuleBasedSalonChatbot()
-        self.semantic_engine = SemanticSalonRetriever(use_dense_embeddings=True)
+        self.semantic_engine = semantic_engine if semantic_engine is not None else get_shared_semantic_engine()
         self.session_id = str(uuid.uuid4())[:8]
 
     def reset_session(self):
@@ -93,18 +105,19 @@ class HybridSalonAgent:
                 # First check rule-based intent
                 rule_intent, rule_conf, rule_trace = self.rule_engine.detect_intent(user_message)
 
-                # Transactional intents go to Rule Engine / DB operations
-                if rule_intent in ["book_appointment", "cancel_appointment", "view_booking", "lodge_complaint", "human_handover"]:
+                # Direct rule-engine intents (greeting, menu, hours, pricing, bookings, cancellations, complaints)
+                if rule_intent != "unknown":
                     result = self.rule_engine.process_message(user_message)
                     resp = result["response"]
                     intent = result["detected_intent"]
                     conf = result["confidence"]
                     trace = result["trace"]
-                    engine_label = "Hybrid -> Transactional FSM"
+                    engine_label = "Hybrid -> Rule/Transactional FSM"
                 else:
-                    # Informational intents go to Semantic Retrieval
-                    sem_result = self.semantic_engine.query(user_message, threshold=0.40)
-                    if sem_result["confidence"] >= 0.40 and not sem_result["needs_handover"]:
+                    # Informational / unstructured questions go to Semantic Retrieval
+                    threshold = 0.35 if getattr(self.semantic_engine, "use_dense", False) else 0.12
+                    sem_result = self.semantic_engine.query(user_message, threshold=threshold)
+                    if sem_result["confidence"] >= threshold and not sem_result["needs_handover"]:
                         resp = sem_result["response"]
                         conf = sem_result["confidence"]
                         intent = f"semantic_{sem_result['matched_id']}"
