@@ -202,11 +202,8 @@ Salon-AI/
 │   ├── test_whatsapp.py       # Integration tests for WhatsApp bot & endpoints
 │   └── test_ai_system.py      # Core agent & safety guardrail tests
 ├── docs/
-│   ├── INT428_PROJECT_REPORT.md   # Academic course project report
-│   ├── VIVA_PREPARATION_GUIDE.md  # 30+ faculty viva defense Q&A guide
-│   ├── OWNER_EVALUATION_FORM.md   # Salon feedback & operational validation
-│   ├── PRESENTATION_SLIDES.md     # Course presentation slide deck
-│   └── DEPLOYMENT.md              # Cloud deployment & operations guide
+│   ├── DEPLOYMENT.md              # 24/7 Cloud deployment & operations guide
+│   └── OWNER_EVALUATION_FORM.md   # Salon feedback & operational assessment
 ├── render.yaml                # Render Cloud 24/7 deployment specification
 ├── requirements.txt           # Python dependencies
 └── README.md                  # Comprehensive system documentation
