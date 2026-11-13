@@ -209,7 +209,8 @@ with st.sidebar:
     st.markdown("### 📍 Salon Details")
     st.markdown(f"**Address:** {ADDRESS}")
     st.markdown(f"**Hours:** {OPERATING_HOURS}")
-    st.markdown(f"**WhatsApp Bot:** `+91 6284421638` / `+1 415 523 8886`")
+    st.markdown(f"**WhatsApp Bot:** `+91 6284421638`")
+    st.markdown(f"[🔗 **Pair WhatsApp Bot (24/7 Cloud)**]({LIVE_API_BASE}/pair)")
     st.markdown(f"**Motto:** *{TAGLINE}*")
 
     st.divider()
