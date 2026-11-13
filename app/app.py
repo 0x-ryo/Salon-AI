@@ -130,8 +130,8 @@ st.markdown("""
 # Initialize DB on start
 init_db()
 
-# Remote Cloudflare API URL for Live Cloud Sync
-LIVE_API_BASE = os.environ.get("SALON_LIVE_API", "https://copies-martin-massachusetts-eight.trycloudflare.com")
+# Remote 24/7 Cloud API URL on Render (with Cloudflare fallback)
+LIVE_API_BASE = os.environ.get("SALON_LIVE_API", "https://salon-ai-backend-6xdf.onrender.com")
 
 def fetch_live_cloud_data():
     """
