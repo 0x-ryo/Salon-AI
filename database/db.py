@@ -191,6 +191,12 @@ def init_db():
             if "Staff" in existing_b["name"] or "Vikram" in existing_b["name"] or "Rajesh" in existing_b["name"] or existing_b["name"] != b["name"]:
                 cursor.execute("UPDATE barbers SET name = ?, title = ? WHERE id = ?", (b["name"], b["title"], b["id"]))
 
+    # Force purge any legacy barber names in DB
+    cursor.execute("UPDATE barbers SET name = 'Station 1', title = 'Station 1 Stylist' WHERE id = 'B1' OR name LIKE '%Vikram%'")
+    cursor.execute("UPDATE barbers SET name = 'Station 2', title = 'Station 2 Stylist' WHERE id = 'B2' OR name LIKE '%Rajesh%'")
+    cursor.execute("UPDATE appointments SET barber_name = 'Station 1' WHERE barber_id = 'B1' OR barber_name LIKE '%Vikram%' OR barber_name LIKE '%Chair 1%' OR barber_name = 'Razors-n-scissors Staff'")
+    cursor.execute("UPDATE appointments SET barber_name = 'Station 2' WHERE barber_id = 'B2' OR barber_name LIKE '%Rajesh%' OR barber_name LIKE '%Chair 2%'")
+
     conn.commit()
     conn.close()
 
@@ -245,7 +251,7 @@ def get_service_by_name_or_id(identifier):
 
 
 def get_all_barbers():
-    """Fetch all active barbers."""
+    """Fetch all active station stylists."""
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM barbers")
@@ -254,6 +260,12 @@ def get_all_barbers():
     result = []
     for r in rows:
         b = dict(r)
+        if "2" in str(b.get("id", "")) or "2" in str(b.get("name", "")):
+            b["name"] = "Station 2"
+            b["title"] = "Station 2 Stylist"
+        else:
+            b["name"] = "Station 1"
+            b["title"] = "Station 1 Stylist"
         b["specialties"] = json.loads(b["specialties"])
         b["working_days"] = json.loads(b["working_days"])
         result.append(b)
@@ -652,7 +664,15 @@ def get_all_appointments(date_filter=None):
         cursor.execute("SELECT * FROM appointments ORDER BY appointment_date DESC, start_time ASC")
     rows = cursor.fetchall()
     conn.close()
-    return [dict(r) for r in rows]
+    apps = []
+    for r in rows:
+        app = dict(r)
+        if "2" in str(app.get("barber_id", "")) or "2" in str(app.get("barber_name", "")):
+            app["barber_name"] = "Station 2"
+        else:
+            app["barber_name"] = "Station 1"
+        apps.append(app)
+    return apps
 
 
 def log_complaint(customer_name, phone, complaint_text, severity="MEDIUM"):

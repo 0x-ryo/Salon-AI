@@ -21,6 +21,7 @@
 | Service | Access Link | Description |
 | :--- | :--- | :--- |
 | **Live Operations Portal** | [salon-ai-0x-ryo.streamlit.app](https://salon-ai-0x-ryo.streamlit.app/) | Streamlit Cloud live counter dashboard, appointment scheduler, revenue analytics, and INT428 AI Lab Inspector. |
+| **GitHub Repository** | [github.com/0x-ryo/Chatbot](https://github.com/0x-ryo/Chatbot) | Official source code repository, test suites, architecture documentation, and CI/CD specs. |
 | **24/7 Cloud Bot Gateway** | [salon-ai-backend-6xdf.onrender.com](https://salon-ai-backend-6xdf.onrender.com) | Python FastAPI + Neonize WebSocket cloud engine on Render (runs 24/7 without requiring a laptop). |
 | **WhatsApp Device Pairing** | [Pairing Screen (`/pair`)](https://salon-ai-backend-6xdf.onrender.com/pair) | Real-time multi-device pairing interface for WhatsApp salon bot. |
 | **Target Salon WhatsApp** | **`+91 XXXXX-XXXXX`** *(Protected · Configured via `WA_TARGET_PHONE`)* | Real salon contact number for multi-turn appointment bookings, inquiries, and grievances. |
@@ -226,8 +227,8 @@ A common operational concern for business owners is data permanence. In this pla
 
 ### 1. Clone & Install Dependencies
 ```bash
-git clone https://github.com/0x-ryo/Salon-AI.git
-cd Salon-AI
+git clone https://github.com/0x-ryo/Chatbot.git
+cd Chatbot
 pip install -r requirements.txt
 ```
 
