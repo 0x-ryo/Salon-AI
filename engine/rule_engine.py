@@ -16,7 +16,7 @@ from datetime import datetime, timedelta
 from database.db import (
     get_all_services, get_service_by_name_or_id, get_all_barbers, get_available_slots,
     book_appointment, cancel_appointment_by_phone, get_appointments_by_phone,
-    log_complaint, add_to_handover_queue, is_salon_closed_on
+    log_complaint, add_to_handover_queue
 )
 try:
     from salon_config import SALON_NAME, PHONE_WHATSAPP, ADDRESS, OPERATING_HOURS
@@ -217,7 +217,7 @@ class RuleBasedSalonChatbot:
     Deterministic Goal-Oriented Conversational Agent.
     Maintains slot-filling conversation state across turns.
     """
-    DEFAULT_BARBER = "Razors-n-scissors Staff"
+    DEFAULT_BARBER = "default"
 
     def __init__(self):
         self.state = "IDLE"
@@ -788,15 +788,24 @@ class RuleBasedSalonChatbot:
             dur_info = f" · {s_obj['duration_minutes']} mins" if s_obj else ""
 
             today = datetime.now()
+            today_date_str = today.strftime("%Y-%m-%d")
             today_str = today.strftime("%a, %b %d")
             tomorrow = today + timedelta(days=1)
+            tomorrow_date_str = tomorrow.strftime("%Y-%m-%d")
             tomorrow_str = tomorrow.strftime("%a, %b %d")
+
+            from database.db import is_salon_closed
+            today_closed, today_reason = is_salon_closed(today_date_str)
+            tomorrow_closed, tomorrow_reason = is_salon_closed(tomorrow_date_str)
+
+            today_line = f"1️⃣ *Today* ({today_str}) 🔴 _[Closed: {today_reason}]_" if today_closed else f"1️⃣ *Today* ({today_str})"
+            tomorrow_line = f"2️⃣ *Tomorrow* ({tomorrow_str}) 🔴 _[Closed: {tomorrow_reason}]_" if tomorrow_closed else f"2️⃣ *Tomorrow* ({tomorrow_str})"
 
             return (
                 f"Selected: ✂️ *{self.slots['service']}*{price_info}{dur_info}\n\n"
                 "📅 *Which day would you like to visit?*\n"
-                f"1️⃣ *Today* ({today_str})\n"
-                f"2️⃣ *Tomorrow* ({tomorrow_str})\n\n"
+                f"{today_line}\n"
+                f"{tomorrow_line}\n\n"
                 "💡 _Reply *1* for Today, *2* for Tomorrow, or type any date (YYYY-MM-DD)_"
             )
 
@@ -804,7 +813,18 @@ class RuleBasedSalonChatbot:
         if not self.slots["time_slot"]:
             self.state = "AWAITING_TIME"
             date_str = self.slots["date"]
-            slots = get_available_slots("B1", date_str)
+
+            from database.db import is_salon_closed
+            closed, reason = is_salon_closed(date_str)
+            if closed:
+                self.slots["date"] = None
+                return (
+                    f"⚠️ *Razors-n-scissors is closed on {date_str}* ({reason}).\n\n"
+                    f"No appointments can be scheduled on this day.\n"
+                    f"Please choose another date (reply *2* for tomorrow or type a date):"
+                )
+
+            slots = get_available_slots("default", date_str)
 
             # If booking for today, filter out passed hours
             now = datetime.now()
@@ -813,14 +833,8 @@ class RuleBasedSalonChatbot:
                 slots = [s for s in slots if s > cur_time]
 
             if not slots:
-                closed, reason = is_salon_closed_on(date_str)
-                if closed:
-                    return (
-                        f"⚠️ *Razors-n-scissors is closed on {date_str}* ({reason}).\n\n"
-                        f"Please choose another date (reply *2* for tomorrow or enter a date):"
-                    )
                 return (
-                    f"⚠️ All styling slots are currently fully booked on {date_str}.\n"
+                    f"⚠️ No remaining slots available on {date_str}.\n"
                     f"Please choose another date (reply *2* for tomorrow or enter a date):"
                 )
 

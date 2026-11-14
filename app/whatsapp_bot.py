@@ -292,30 +292,6 @@ def api_get_complaints():
         return []
 
 
-@app.get("/api/settings")
-def api_get_settings():
-    """Returns salon operational settings (capacity, closure, holidays)."""
-    try:
-        from database.db import get_all_salon_settings
-        return get_all_salon_settings()
-    except Exception as e:
-        return {"active_barbers": "2", "is_closed": "0", "closure_reason": "", "closed_dates": "[]", "error": str(e)}
-
-
-@app.post("/api/action/settings")
-async def api_update_settings(request: Request):
-    """Updates salon operational settings."""
-    try:
-        data = await request.json()
-        from database.db import set_salon_setting
-        for k, v in data.items():
-            set_salon_setting(k, str(v))
-        from database.db import get_all_salon_settings
-        return {"success": True, "settings": get_all_salon_settings()}
-    except Exception as e:
-        return {"success": False, "error": str(e)}
-
-
 @app.post("/api/action/book")
 async def api_book_appointment(request: Request):
     """Creates a new appointment via REST API."""
@@ -362,6 +338,59 @@ async def api_resolve_complaint(request: Request):
     notes = data.get("notes", "Resolved by salon management")
     resolve_complaint(cid, notes)
     return {"success": True, "id": cid}
+
+
+@app.get("/api/holidays")
+def api_get_holidays():
+    """Returns all scheduled salon closure dates."""
+    try:
+        from database.db import get_all_holidays
+        return get_all_holidays()
+    except Exception:
+        return []
+
+
+@app.post("/api/action/holiday")
+async def api_toggle_holiday(request: Request):
+    """Sets or clears a salon closure date."""
+    try:
+        from database.db import set_salon_closed, set_salon_open
+        data = await request.json()
+        date_str = data.get("date_str")
+        is_closed = data.get("is_closed", True)
+        reason = data.get("reason", "Salon Holiday / Closed by Owner")
+        if is_closed:
+            set_salon_closed(date_str, reason)
+        else:
+            set_salon_open(date_str)
+        return {"success": True, "date_str": date_str, "is_closed": is_closed}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+@app.get("/api/roster")
+def api_get_roster(date_str: str = None):
+    """Returns barber attendance roster for a date."""
+    try:
+        from database.db import get_barber_roster
+        return get_barber_roster(date_str)
+    except Exception:
+        return []
+
+
+@app.post("/api/action/roster")
+async def api_toggle_roster(request: Request):
+    """Sets a barber's attendance for a date."""
+    try:
+        from database.db import set_barber_attendance
+        data = await request.json()
+        date_str = data.get("date_str")
+        barber_id = data.get("barber_id")
+        is_active = data.get("is_active", True)
+        set_barber_attendance(date_str, barber_id, is_active)
+        return {"success": True, "date_str": date_str, "barber_id": barber_id, "is_active": is_active}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 
 # ================= REAL-NUMBER WHATSAPP CLOUD GATEWAY (NEONIZE) =================

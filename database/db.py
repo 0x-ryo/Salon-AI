@@ -121,31 +121,24 @@ def init_db():
     )
     """)
 
-    # 7. Salon Settings Table (Store Closure, Capacity, Active Barbers)
+    # 7. Salon Holiday / Closed Days Table
     cursor.execute("""
-    CREATE TABLE IF NOT EXISTS salon_settings (
-        key TEXT PRIMARY KEY,
-        value TEXT
+    CREATE TABLE IF NOT EXISTS salon_holidays (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        date_str TEXT UNIQUE NOT NULL,
+        reason TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     """)
 
-    default_settings = {
-        "active_barbers": "2",
-        "is_closed": "0",
-        "closure_reason": "",
-        "closed_dates": "[]"
-    }
-    for k, v in default_settings.items():
-        cursor.execute("INSERT OR IGNORE INTO salon_settings (key, value) VALUES (?, ?)", (k, v))
-
-    # Ensure Chair 1 and Chair 2 exist
+    # 8. Barber Attendance & Daily Roster Table
     cursor.execute("""
-    INSERT OR IGNORE INTO barbers (id, name, title, experience_years, specialties, rating, working_days)
-    VALUES ('B1', 'Razors-n-scissors Staff', 'Senior Stylist (Chair 1)', 5, '["Hair Cut", "Beard Trim", "Hair Spa"]', 4.9, '["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"]')
-    """)
-    cursor.execute("""
-    INSERT OR IGNORE INTO barbers (id, name, title, experience_years, specialties, rating, working_days)
-    VALUES ('B2', 'Stylist 2 (Chair 2)', 'Grooming Specialist (Chair 2)', 4, '["Hair Cut", "Facials", "Styling"]', 4.8, '["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"]')
+    CREATE TABLE IF NOT EXISTS barber_roster (
+        date_str TEXT NOT NULL,
+        barber_id TEXT NOT NULL,
+        is_active INTEGER DEFAULT 1,
+        PRIMARY KEY (date_str, barber_id)
+    )
     """)
 
     conn.commit()
@@ -162,35 +155,43 @@ def init_db():
             VALUES (?, ?, ?, ?, ?, ?)
             """, (s["id"], s["category"], s["name"], s.get("description", ""), s["duration_minutes"], s["price_inr"]))
 
-        # Always seed a default barber entry for Razors-n-scissors
-        default_barbers = kb.get("barbers", [
-            {
-                "id": "B1",
-                "name": "Razors-n-scissors Staff",
-                "title": "Professional Barber",
-                "experience_years": 5,
-                "specialties": ["Hair Cut", "Beard Trim", "Hair Spa"],
-                "rating": 4.8,
-                "working_days": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"]
-            }
-        ])
-        for b in default_barbers:
+    # Seed or upgrade standard 2-barber roster for Razors-n-scissors
+    barbers_to_seed = [
+        {
+            "id": "B1",
+            "name": "Vikram Singh (Chair 1)",
+            "title": "Master Stylist & Barber",
+            "experience_years": 6,
+            "specialties": ["Hair Cut", "Beard Trim", "Hair Colour", "Keratin Spa"],
+            "rating": 4.9,
+            "working_days": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"]
+        },
+        {
+            "id": "B2",
+            "name": "Rajesh Kumar (Chair 2)",
+            "title": "Grooming & Fade Specialist",
+            "experience_years": 4,
+            "specialties": ["Hair Cut", "Gaming Shave", "D-Tan Facial", "Head Massage"],
+            "rating": 4.8,
+            "working_days": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"]
+        }
+    ]
+    for b in barbers_to_seed:
+        cursor.execute("SELECT id, name FROM barbers WHERE id = ?", (b["id"],))
+        existing_b = cursor.fetchone()
+        if not existing_b:
             cursor.execute("""
             INSERT INTO barbers (id, name, title, experience_years, specialties, rating, working_days)
             VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, (b["id"], b["name"], b.get("title","Barber"), b.get("experience_years",5),
-                  json.dumps(b.get("specialties",[])), b.get("rating",5.0),
-                  json.dumps(b.get("working_days",[]))))
+            """, (b["id"], b["name"], b["title"], b["experience_years"],
+                  json.dumps(b["specialties"]), b["rating"],
+                  json.dumps(b["working_days"])))
+        else:
+            # Upgrade legacy placeholder names if needed
+            if "Staff" in existing_b["name"] or existing_b["name"] != b["name"]:
+                cursor.execute("UPDATE barbers SET name = ?, title = ? WHERE id = ?", (b["name"], b["title"], b["id"]))
 
-        # Seed a sample upcoming appointment
-        today_str = datetime.now().strftime("%Y-%m-%d")
-        cursor.execute("""
-        INSERT INTO appointments (customer_name, phone, service_id, service_name, barber_id, barber_name, appointment_date, start_time, end_time, price_inr, status)
-        VALUES ('Demo Customer', '6284421638', 'S1', 'Hair Cut', 'B1', 'Razors-n-scissors Staff', ?, '10:00', '10:20', 100, 'BOOKED')
-        """, (today_str,))
-
-        conn.commit()
-
+    conn.commit()
     conn.close()
 
 
@@ -260,18 +261,26 @@ def get_all_barbers():
 
 
 def get_barber_by_name_or_id(identifier=None):
-    """Find a barber by ID or partial name, or return default salon staff."""
+    """Find a barber by ID or partial name, or return default active salon staff."""
     conn = get_connection()
     cursor = conn.cursor()
-    if not identifier or str(identifier).lower() in ["default", "any", "staff", "b1", "none"]:
-        cursor.execute("SELECT * FROM barbers LIMIT 1")
+    id_str = str(identifier).strip().lower() if identifier else ""
+    if not identifier or id_str in ["default", "any", "none", "auto"]:
+        cursor.execute("SELECT * FROM barbers ORDER BY id ASC LIMIT 1")
+    elif "staff" in id_str or "razor" in id_str or id_str in ["b1", "chair 1", "chair1"]:
+        cursor.execute("SELECT * FROM barbers WHERE id = 'B1' LIMIT 1")
+    elif id_str in ["b2", "chair 2", "chair2"]:
+        cursor.execute("SELECT * FROM barbers WHERE id = 'B2' LIMIT 1")
     else:
         cursor.execute("""
         SELECT * FROM barbers 
         WHERE id = ? OR LOWER(name) LIKE ?
         LIMIT 1
-        """, (identifier, f"%{str(identifier).lower()}%"))
+        """, (identifier, f"%{id_str}%"))
     row = cursor.fetchone()
+    if not row:
+        cursor.execute("SELECT * FROM barbers ORDER BY id ASC LIMIT 1")
+        row = cursor.fetchone()
     conn.close()
     if row:
         b = dict(row)
@@ -281,129 +290,152 @@ def get_barber_by_name_or_id(identifier=None):
     return None
 
 
-def get_salon_setting(key: str, default: str = "") -> str:
-    """Retrieves a salon operational setting."""
+def is_salon_closed(date_str: str) -> tuple[bool, str]:
+    """Checks whether the salon is marked closed / holiday on a given date."""
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT value FROM salon_settings WHERE key = ?", (key,))
+    cursor.execute("SELECT reason FROM salon_holidays WHERE date_str = ?", (date_str,))
     row = cursor.fetchone()
     conn.close()
-    return row["value"] if row else default
+    if row:
+        return True, row["reason"]
+    return False, ""
 
 
-def set_salon_setting(key: str, value: str):
-    """Sets a salon operational setting."""
+def set_salon_closed(date_str: str, reason: str = "Salon Holiday / Closed by Owner") -> bool:
+    """Marks a specific date as closed."""
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
-    INSERT INTO salon_settings (key, value) VALUES (?, ?)
-    ON CONFLICT(key) DO UPDATE SET value = excluded.value
-    """, (key, str(value)))
+    INSERT INTO salon_holidays (date_str, reason)
+    VALUES (?, ?)
+    ON CONFLICT(date_str) DO UPDATE SET reason = excluded.reason
+    """, (date_str, reason))
     conn.commit()
     conn.close()
+    return True
 
 
-def get_all_salon_settings() -> dict:
-    """Returns all settings as a key-value dictionary."""
+def set_salon_open(date_str: str) -> bool:
+    """Re-opens the salon for a previously closed date."""
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT key, value FROM salon_settings")
+    cursor.execute("DELETE FROM salon_holidays WHERE date_str = ?", (date_str,))
+    conn.commit()
+    conn.close()
+    return True
+
+
+def get_all_holidays() -> list[dict]:
+    """Fetches all scheduled closed dates."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM salon_holidays ORDER BY date_str ASC")
     rows = cursor.fetchall()
     conn.close()
-    settings = {r["key"]: r["value"] for r in rows}
-    settings.setdefault("active_barbers", "2")
-    settings.setdefault("is_closed", "0")
-    settings.setdefault("closure_reason", "")
-    settings.setdefault("closed_dates", "[]")
-    return settings
+    return [dict(r) for r in rows]
 
 
-def is_salon_closed_on(date_str: str) -> tuple[bool, str]:
-    """Checks if salon is closed on a specific date (either today toggle or scheduled holiday)."""
-    settings = get_all_salon_settings()
-    is_closed_toggle = settings.get("is_closed", "0") == "1"
-    closure_reason = settings.get("closure_reason", "").strip() or "Salon is closed for operations."
-    today_str = datetime.now().strftime("%Y-%m-%d")
+def get_active_barbers(date_str: str = None) -> list[dict]:
+    """
+    Returns the list of active barbers on duty for date_str.
+    If no explicit roster is set for that date, all barbers in the DB are assumed on duty.
+    """
+    if not date_str:
+        date_str = datetime.now().strftime("%Y-%m-%d")
 
-    if is_closed_toggle and date_str == today_str:
-        return True, closure_reason
+    all_barbers = get_all_barbers()
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT barber_id, is_active FROM barber_roster WHERE date_str = ?", (date_str,))
+    roster_rows = {r["barber_id"]: r["is_active"] for r in cursor.fetchall()}
+    conn.close()
 
-    try:
-        closed_dates = json.loads(settings.get("closed_dates", "[]"))
-        if date_str in closed_dates:
-            return True, closure_reason or f"Salon is closed on {date_str} (Scheduled Holiday)."
-    except Exception:
-        pass
+    active = []
+    for b in all_barbers:
+        # Default to active (1) if not explicitly recorded as 0
+        is_active = roster_rows.get(b["id"], 1)
+        if is_active == 1:
+            active.append(b)
+    return active
 
-    return False, ""
+
+def set_barber_attendance(date_str: str, barber_id: str, is_active: bool) -> bool:
+    """Sets whether a barber is on duty (1) or on leave (0) on a specific date."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    val = 1 if is_active else 0
+    cursor.execute("""
+    INSERT INTO barber_roster (date_str, barber_id, is_active)
+    VALUES (?, ?, ?)
+    ON CONFLICT(date_str, barber_id) DO UPDATE SET is_active = excluded.is_active
+    """, (date_str, barber_id, val))
+    conn.commit()
+    conn.close()
+    return True
+
+
+def get_barber_roster(date_str: str = None) -> list[dict]:
+    """Returns all barbers with their on-duty status (True/False) for date_str."""
+    if not date_str:
+        date_str = datetime.now().strftime("%Y-%m-%d")
+
+    all_barbers = get_all_barbers()
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT barber_id, is_active FROM barber_roster WHERE date_str = ?", (date_str,))
+    roster_rows = {r["barber_id"]: r["is_active"] for r in cursor.fetchall()}
+    conn.close()
+
+    result = []
+    for b in all_barbers:
+        b_copy = dict(b)
+        b_copy["is_active"] = roster_rows.get(b["id"], 1) == 1
+        result.append(b_copy)
+    return result
 
 
 def get_available_slots(barber_id=None, date_str=None):
     """
     Computes available 30-minute time slots between 09:00 and 20:30 on a given date.
-    Respects:
-    1. Salon Closure: returns [] if date is marked closed/holiday.
-    2. Dynamic Capacity: 
-       - If active_barbers == 1: max 1 booking allowed per slot across salon.
-       - If active_barbers == 2: max 2 bookings allowed per slot across salon (Chair 1 & Chair 2).
+    - If salon is closed on date_str -> returns []
+    - Dynamically scales capacity based on active barbers on duty:
+      - 2 Barbers active -> slot allows 2 concurrent bookings (Chair 1 & Chair 2)
+      - 1 Barber active  -> slot allows 1 booking
+      - 0 Barbers active -> returns []
     """
     if not date_str:
         date_str = datetime.now().strftime("%Y-%m-%d")
 
-    closed, reason = is_salon_closed_on(date_str)
+    # 1. Holiday Check
+    closed, _ = is_salon_closed(date_str)
     if closed:
         return []
 
-    try:
-        active_capacity = int(get_salon_setting("active_barbers", "2"))
-    except Exception:
-        active_capacity = 2
+    # 2. Check active barbers on duty
+    active_barbers = get_active_barbers(date_str)
+    if not active_barbers:
+        return []
+
+    # If a specific barber was requested
+    specific_barber = None
+    if barber_id and str(barber_id).lower() not in ["default", "any", "none", "auto"]:
+        specific_barber = get_barber_by_name_or_id(barber_id)
+        if specific_barber:
+            # Check if this specific barber is active on duty
+            if not any(ab["id"] == specific_barber["id"] for ab in active_barbers):
+                return []
 
     conn = get_connection()
     cursor = conn.cursor()
 
-    b_id = None
-    if barber_id and str(barber_id).lower() not in ["default", "any", "staff", "none", "razors-n-scissors staff"]:
-        b = get_barber_by_name_or_id(barber_id)
-        if b:
-            b_id = b["id"]
-
+    # Get all active bookings for this date
     cursor.execute("""
-    SELECT barber_id, barber_name, start_time, end_time FROM appointments
-    WHERE appointment_date = ? AND status = 'BOOKED'
+    SELECT barber_id, start_time, end_time FROM appointments
+    WHERE appointment_date = ? AND status IN ('BOOKED', 'IN_SERVICE')
     """, (date_str,))
-    booked_slots = cursor.fetchall()
+    booked_rows = cursor.fetchall()
     conn.close()
-
-    def is_slot_busy(candidate):
-        try:
-            cand_dt = datetime.strptime(candidate, "%H:%M")
-            if b_id:
-                for b in booked_slots:
-                    if b["barber_id"] == b_id:
-                        try:
-                            b_start = datetime.strptime(b["start_time"], "%H:%M")
-                            b_end = datetime.strptime(b["end_time"], "%H:%M")
-                            if b_start <= cand_dt < b_end:
-                                return True
-                        except Exception:
-                            if b["start_time"] == candidate:
-                                return True
-                return False
-
-            busy_chairs = 0
-            for b in booked_slots:
-                try:
-                    b_start = datetime.strptime(b["start_time"], "%H:%M")
-                    b_end = datetime.strptime(b["end_time"], "%H:%M")
-                    if b_start <= cand_dt < b_end:
-                        busy_chairs += 1
-                except Exception:
-                    if b["start_time"] == candidate:
-                        busy_chairs += 1
-            return busy_chairs >= active_capacity
-        except Exception:
-            return False
 
     candidate_slots = [
         "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
@@ -412,28 +444,71 @@ def get_available_slots(barber_id=None, date_str=None):
         "18:30", "19:00", "19:30", "20:00"
     ]
 
-    available = [slot for slot in candidate_slots if not is_slot_busy(slot)]
+    available = []
+    for cand in candidate_slots:
+        try:
+            cand_dt = datetime.strptime(cand, "%H:%M")
+        except Exception:
+            continue
+
+        if specific_barber:
+            # Check if this specific barber is busy at candidate slot
+            busy = False
+            for b in booked_rows:
+                if b["barber_id"] == specific_barber["id"]:
+                    try:
+                        b_start = datetime.strptime(b["start_time"], "%H:%M")
+                        b_end = datetime.strptime(b["end_time"], "%H:%M")
+                        if b_start <= cand_dt < b_end:
+                            busy = True
+                            break
+                    except Exception:
+                        if b["start_time"] == cand:
+                            busy = True
+                            break
+            if not busy:
+                available.append(cand)
+        else:
+            # Capacity check: how many active barbers are busy at this slot?
+            busy_barber_ids = set()
+            for b in booked_rows:
+                try:
+                    b_start = datetime.strptime(b["start_time"], "%H:%M")
+                    b_end = datetime.strptime(b["end_time"], "%H:%M")
+                    if b_start <= cand_dt < b_end:
+                        busy_barber_ids.add(b["barber_id"])
+                except Exception:
+                    if b["start_time"] == cand:
+                        busy_barber_ids.add(b["barber_id"])
+
+            # Slot is available if at least one active barber is free!
+            free_barbers = [ab for ab in active_barbers if ab["id"] not in busy_barber_ids]
+            if free_barbers:
+                available.append(cand)
+
     return available
 
 
 def book_appointment(customer_name, phone, service_id, barber_id=None, date_str=None, time_str=None):
     """
-    Creates a new appointment with strict interval conflict detection, store closure check, and dynamic chair capacity.
+    Creates a new appointment with strict interval conflict detection and dynamic chair allocation.
     Supports single or multi-service combinations (e.g. 'Hair Cut + Beard Trim').
     Returns (success: bool, message: str, appointment_id: int or None)
     """
-    if not date_str or not time_str:
-        return False, "Date and time must be provided.", None
+    if not date_str:
+        date_str = datetime.now().strftime("%Y-%m-%d")
 
-    # 1. Check Salon Closure
-    closed, reason = is_salon_closed_on(date_str)
+    # 1. Holiday Check
+    closed, reason = is_salon_closed(date_str)
     if closed:
-        return False, f"Sorry, Razors-n-scissors is closed on {date_str} ({reason}). No appointments can be accepted.", None
+        return False, f"Razors-n-scissors is closed on {date_str} ({reason}). No appointments can be booked on this day.", None
 
+    # 2. Service resolution
     service = get_service_by_name_or_id(service_id)
     if not service:
         return False, f"Service '{service_id}' could not be found.", None
 
+    # 3. Calculate end time
     try:
         start_dt = datetime.strptime(time_str, "%H:%M")
         end_dt = start_dt + timedelta(minutes=service["duration_minutes"])
@@ -441,64 +516,76 @@ def book_appointment(customer_name, phone, service_id, barber_id=None, date_str=
     except ValueError:
         return False, "Invalid time format. Please provide HH:MM in 24-hr format.", None
 
-    try:
-        active_capacity = int(get_salon_setting("active_barbers", "2"))
-    except Exception:
-        active_capacity = 2
+    # 4. Active Barbers & Chair Allocation
+    active_barbers = get_active_barbers(date_str)
+    if not active_barbers:
+        return False, f"No styling staff are on duty on {date_str}. The salon is inactive on this day.", None
 
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute("""
-    SELECT id, customer_name, barber_id, barber_name, start_time, end_time FROM appointments
-    WHERE appointment_date = ? 
-      AND status = 'BOOKED'
-      AND start_time < ? 
-      AND end_time > ?
-    """, (date_str, end_time_str, time_str))
-    overlapping = cursor.fetchall()
-
-    specific_barber = None
-    if barber_id and str(barber_id).lower() not in ["default", "any", "staff", "none"]:
-        b = get_barber_by_name_or_id(barber_id)
-        if b:
-            specific_barber = b
-
-    if specific_barber:
-        barber_conflict = [o for o in overlapping if o["barber_id"] == specific_barber["id"] or o["barber_name"] == specific_barber["name"]]
-        if barber_conflict:
+    # Determine candidate barbers
+    assigned_barber = None
+    if barber_id and str(barber_id).lower() not in ["default", "any", "none", "auto"]:
+        target_b = get_barber_by_name_or_id(barber_id)
+        if not target_b or not any(ab["id"] == target_b["id"] for ab in active_barbers):
+            b_name = target_b["name"] if target_b else barber_id
             conn.close()
-            c = barber_conflict[0]
-            return False, f"Sorry, {specific_barber['name']} is already booked / busy from {c['start_time']} to {c['end_time']} on {date_str}. Please choose another time slot.", None
-        assigned_id = specific_barber["id"]
-        assigned_name = specific_barber["name"]
+            return False, f"Stylist '{b_name}' is not on duty on {date_str}.", None
+
+        # Check conflict for this specific barber
+        cursor.execute("""
+        SELECT id, customer_name, start_time, end_time FROM appointments
+        WHERE barber_id = ? 
+          AND appointment_date = ? 
+          AND status IN ('BOOKED', 'IN_SERVICE')
+          AND start_time < ? 
+          AND end_time > ?
+        """, (target_b["id"], date_str, end_time_str, time_str))
+        existing = cursor.fetchone()
+        if existing:
+            conn.close()
+            return False, f"Sorry, {target_b['name']} is already booked / busy from {existing['start_time']} to {existing['end_time']} on {date_str}. Please choose another time slot.", None
+        assigned_barber = target_b
     else:
-        if len(overlapping) >= active_capacity:
-            conn.close()
-            chair_word = "styling chair" if active_capacity == 1 else "styling chairs"
-            return False, f"Sorry, all {active_capacity} {chair_word} are already fully booked from {time_str} to {end_time_str} on {date_str}. Please choose another time slot.", None
+        # Auto-assign to first available active barber on duty
+        for ab in active_barbers:
+            cursor.execute("""
+            SELECT id, customer_name, start_time, end_time FROM appointments
+            WHERE barber_id = ? 
+              AND appointment_date = ? 
+              AND status IN ('BOOKED', 'IN_SERVICE')
+              AND start_time < ? 
+              AND end_time > ?
+            """, (ab["id"], date_str, end_time_str, time_str))
+            existing = cursor.fetchone()
+            if not existing:
+                assigned_barber = ab
+                break
 
-        booked_chairs = [o["barber_id"] for o in overlapping]
-        if "B1" not in booked_chairs:
-            assigned_id = "B1"
-            assigned_name = "Stylist 1 (Chair 1)"
-        elif active_capacity >= 2 and "B2" not in booked_chairs:
-            assigned_id = "B2"
-            assigned_name = "Stylist 2 (Chair 2)"
-        else:
-            assigned_id = f"B{len(overlapping) + 1}"
-            assigned_name = f"Stylist Station {len(overlapping) + 1}"
+        if not assigned_barber:
+            conn.close()
+            cap_str = f"All {len(active_barbers)} chairs" if len(active_barbers) > 1 else "The chair"
+            return False, f"Sorry, {cap_str} on duty are fully booked from {time_str} to {end_time_str} on {date_str}. Please choose another time slot.", None
 
     cursor.execute("""
     INSERT INTO appointments (customer_name, phone, service_id, service_name, barber_id, barber_name, appointment_date, start_time, end_time, price_inr, status)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'BOOKED')
-    """, (customer_name, phone, service["id"], service["name"], assigned_id, assigned_name, date_str, time_str, end_time_str, service["price_inr"]))
+    """, (customer_name, phone, service["id"], service["name"], assigned_barber["id"], assigned_barber["name"], date_str, time_str, end_time_str, service["price_inr"]))
 
     appointment_id = cursor.lastrowid
     conn.commit()
     conn.close()
 
-    return True, f"Appointment #{appointment_id} confirmed for {customer_name} ({assigned_name}) on {date_str} at {time_str} ({service['name']} - ₹{int(service['price_inr'])}).", appointment_id
+    return True, f"Appointment #{appointment_id} confirmed for {customer_name} with {assigned_barber['name']} on {date_str} at {time_str} ({service['name']} - ₹{int(service['price_inr'])}).", appointment_id
+
+
+def book_walkin_appointment(customer_name: str, phone: str, service_id: str, barber_id: str = None, time_str: str = None) -> tuple[bool, str, int | None]:
+    """Immediate counter walk-in reservation with automatic station assignment."""
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    if not time_str:
+        time_str = datetime.now().strftime("%H:%M")
+    return book_appointment(customer_name, phone, service_id, barber_id=barber_id, date_str=today_str, time_str=time_str)
 
 
 def cancel_appointment_by_phone(phone):
@@ -671,20 +758,38 @@ def update_appointment_status(appointment_id: int, new_status: str) -> bool:
 
 def get_live_metrics() -> dict:
     """Computes real-time KPIs for owner dashboard and API."""
+    today_str = datetime.now().strftime("%Y-%m-%d")
     conn = get_connection()
     cursor = conn.cursor()
     
-    # Active Bookings & Revenue
+    # Active Bookings & Revenue (Overall)
     cursor.execute("SELECT COUNT(*), COALESCE(SUM(price_inr), 0) FROM appointments WHERE status = 'BOOKED'")
     booked_row = cursor.fetchone()
     active_count = booked_row[0] if booked_row else 0
     active_revenue = booked_row[1] if booked_row else 0.0
 
-    # Total Completed
+    # Total Completed (Overall)
     cursor.execute("SELECT COUNT(*), COALESCE(SUM(price_inr), 0) FROM appointments WHERE status = 'COMPLETED'")
     comp_row = cursor.fetchone()
     completed_count = comp_row[0] if comp_row else 0
     completed_revenue = comp_row[1] if comp_row else 0.0
+
+    # Today's Specific Operations
+    cursor.execute("SELECT COUNT(*) FROM appointments WHERE appointment_date = ?", (today_str,))
+    today_total = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM appointments WHERE appointment_date = ? AND status = 'IN_SERVICE'", (today_str,))
+    today_in_service = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*), COALESCE(SUM(price_inr), 0) FROM appointments WHERE appointment_date = ? AND status = 'COMPLETED'", (today_str,))
+    t_comp_row = cursor.fetchone()
+    today_completed = t_comp_row[0] if t_comp_row else 0
+    today_completed_rev = t_comp_row[1] if t_comp_row else 0.0
+
+    cursor.execute("SELECT COUNT(*), COALESCE(SUM(price_inr), 0) FROM appointments WHERE appointment_date = ? AND status = 'BOOKED'", (today_str,))
+    t_booked_row = cursor.fetchone()
+    today_booked = t_booked_row[0] if t_booked_row else 0
+    today_booked_rev = t_booked_row[1] if t_booked_row else 0.0
 
     # Pending Handovers
     cursor.execute("SELECT COUNT(*) FROM handover_queue WHERE status = 'PENDING'")
@@ -704,12 +809,27 @@ def get_live_metrics() -> dict:
     top_services = [{"service": r[0], "count": r[1]} for r in cursor.fetchall()]
 
     conn.close()
+
+    # Salon status & active barbers
+    closed_today, closed_reason = is_salon_closed(today_str)
+    active_barbers = get_active_barbers(today_str)
+    all_barbers = get_all_barbers()
+
     return {
         "active_bookings": active_count,
         "active_revenue_inr": active_revenue,
         "completed_bookings": completed_count,
         "completed_revenue_inr": completed_revenue,
         "total_revenue_inr": active_revenue + completed_revenue,
+        "today_total_bookings": today_total,
+        "today_in_service": today_in_service,
+        "today_completed": today_completed,
+        "today_completed_revenue_inr": today_completed_rev,
+        "today_booked_revenue_inr": today_booked_rev,
+        "is_today_closed": closed_today,
+        "today_closed_reason": closed_reason,
+        "active_barbers_count": len(active_barbers),
+        "total_barbers_count": len(all_barbers),
         "pending_handovers": pending_handovers,
         "open_complaints": open_complaints,
         "top_services": top_services

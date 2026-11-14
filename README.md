@@ -179,8 +179,9 @@ Navigate to [http://localhost:8000/pair](http://localhost:8000/pair) to view the
 ```
 Salon-AI/
 ├── app/
-│   ├── app.py                 # Pulse Clinic Style Front-Desk Operations Portal (Live Queue & Capacity)
-│   ├── academic_lab.py        # INT428 Academic Benchmark Lab & XAI Decision Trace Inspector
+│   ├── app.py                 # Pulse Clinic Front-Desk Reception Portal (Live Operations)
+│   ├── pages/
+│   │   └── 1_🔬_AI_Evaluation_&_Benchmarks.py # Dedicated Academic Evaluation Lab (INT428)
 │   ├── whatsapp_bot.py        # 24/7 Cloud Gateway (Neonize + FastAPI + /pair)
 │   ├── salon_config.py        # Enterprise configurations (Razors-n-scissors BH-5)
 │   └── config.py              # Application settings & environment loader
