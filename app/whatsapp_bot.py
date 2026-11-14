@@ -97,11 +97,9 @@ def handle_whatsapp_message(from_user: str, body_text: str = "", profile_name: s
     # Get user session agent
     agent = get_agent_for_user(clean_sender)
 
-    # Pre-populate slots with Twilio caller identity if missing
-    if extracted_phone and not agent.rule_engine.slots.get("phone"):
-        agent.rule_engine.slots["phone"] = extracted_phone
-    if profile_name and not agent.rule_engine.slots.get("customer_name"):
-        agent.rule_engine.slots["customer_name"] = profile_name
+    # Store caller identity on agent for session fallbacks
+    if extracted_phone:
+        agent.caller_phone = extracted_phone
 
     body_clean = (body_text or "").strip()
 

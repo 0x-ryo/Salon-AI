@@ -7,6 +7,7 @@ complaints, human handovers, and conversation audit logs.
 import sqlite3
 import json
 import os
+import re
 from datetime import datetime, timedelta
 
 DB_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -356,12 +357,14 @@ def cancel_appointment_by_phone(phone):
     """Cancels the most recent booked appointment for a phone number."""
     conn = get_connection()
     cursor = conn.cursor()
+    clean_digits = re.sub(r"\D", "", str(phone))
+    clean_10 = clean_digits[-10:] if len(clean_digits) >= 10 else clean_digits
     cursor.execute("""
     SELECT id, service_name, appointment_date, start_time, barber_name FROM appointments
-    WHERE phone = ? AND status = 'BOOKED'
+    WHERE (phone LIKE ? OR phone = ?) AND status = 'BOOKED'
     ORDER BY appointment_date DESC, start_time DESC
     LIMIT 1
-    """, (phone,))
+    """, (f"%{clean_10}%", str(phone)))
     row = cursor.fetchone()
 
     if not row:
@@ -392,9 +395,13 @@ def get_appointments_by_phone(phone):
     """Finds all bookings (past & present) for a customer phone number."""
     conn = get_connection()
     cursor = conn.cursor()
+    clean_digits = re.sub(r"\D", "", str(phone))
+    clean_10 = clean_digits[-10:] if len(clean_digits) >= 10 else clean_digits
     cursor.execute("""
-    SELECT * FROM appointments WHERE phone = ? ORDER BY appointment_date DESC, start_time DESC
-    """, (phone,))
+    SELECT * FROM appointments 
+    WHERE phone LIKE ? OR phone = ? 
+    ORDER BY appointment_date DESC, start_time DESC
+    """, (f"%{clean_10}%", str(phone)))
     rows = cursor.fetchall()
     conn.close()
     return [dict(r) for r in rows]
