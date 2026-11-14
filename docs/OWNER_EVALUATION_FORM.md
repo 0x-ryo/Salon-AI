@@ -1,6 +1,6 @@
 # INT428 Course Project — Small Business Owner Assessment & Evaluation Form
 ### Course: INT428 — Artificial Intelligence Essentials
-### Project 13: Customer Support Chatbot & Operations Portal for a Real Small Business
+### Project 13: Customer Support Salon-AI & Operations Portal for a Real Small Business
 
 ---
 

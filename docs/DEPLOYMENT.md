@@ -1,4 +1,4 @@
-# Deployment & Operations Guide — Customer Support Chatbot & Operational Management Portal for a Real Small Business
+# Deployment & Operations Guide — Customer Support Salon-AI & Operational Management Portal for a Real Small Business
 ### Razors-n-scissors Barber Salon (BH-5, LPU Campus)
 **Course:** INT428 Artificial Intelligence Essentials · Group 13 · Suman Saha (Reg: 12524973)
 
