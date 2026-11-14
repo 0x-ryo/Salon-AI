@@ -16,7 +16,7 @@ from datetime import datetime, timedelta
 from database.db import (
     get_all_services, get_service_by_name_or_id, get_all_barbers, get_available_slots,
     book_appointment, cancel_appointment_by_phone, get_appointments_by_phone,
-    log_complaint, add_to_handover_queue
+    log_complaint, add_to_handover_queue, is_salon_closed_on
 )
 try:
     from salon_config import SALON_NAME, PHONE_WHATSAPP, ADDRESS, OPERATING_HOURS
@@ -813,8 +813,14 @@ class RuleBasedSalonChatbot:
                 slots = [s for s in slots if s > cur_time]
 
             if not slots:
+                closed, reason = is_salon_closed_on(date_str)
+                if closed:
+                    return (
+                        f"⚠️ *Razors-n-scissors is closed on {date_str}* ({reason}).\n\n"
+                        f"Please choose another date (reply *2* for tomorrow or enter a date):"
+                    )
                 return (
-                    f"⚠️ No remaining slots available on {date_str}.\n"
+                    f"⚠️ All styling slots are currently fully booked on {date_str}.\n"
                     f"Please choose another date (reply *2* for tomorrow or enter a date):"
                 )
 

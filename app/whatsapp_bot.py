@@ -292,6 +292,30 @@ def api_get_complaints():
         return []
 
 
+@app.get("/api/settings")
+def api_get_settings():
+    """Returns salon operational settings (capacity, closure, holidays)."""
+    try:
+        from database.db import get_all_salon_settings
+        return get_all_salon_settings()
+    except Exception as e:
+        return {"active_barbers": "2", "is_closed": "0", "closure_reason": "", "closed_dates": "[]", "error": str(e)}
+
+
+@app.post("/api/action/settings")
+async def api_update_settings(request: Request):
+    """Updates salon operational settings."""
+    try:
+        data = await request.json()
+        from database.db import set_salon_setting
+        for k, v in data.items():
+            set_salon_setting(k, str(v))
+        from database.db import get_all_salon_settings
+        return {"success": True, "settings": get_all_salon_settings()}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
 @app.post("/api/action/book")
 async def api_book_appointment(request: Request):
     """Creates a new appointment via REST API."""
