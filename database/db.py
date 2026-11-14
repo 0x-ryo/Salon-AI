@@ -155,23 +155,23 @@ def init_db():
             VALUES (?, ?, ?, ?, ?, ?)
             """, (s["id"], s["category"], s["name"], s.get("description", ""), s["duration_minutes"], s["price_inr"]))
 
-    # Seed or upgrade standard 2-barber roster for Razors-n-scissors
+    # Seed or upgrade standard 2-station roster for Razors-n-scissors
     barbers_to_seed = [
         {
             "id": "B1",
-            "name": "Vikram Singh (Chair 1)",
-            "title": "Master Stylist & Barber",
-            "experience_years": 6,
-            "specialties": ["Hair Cut", "Beard Trim", "Hair Colour", "Keratin Spa"],
+            "name": "Station 1",
+            "title": "Station 1 Stylist",
+            "experience_years": 5,
+            "specialties": ["Hair Cut", "Beard Trim", "Hair Colour", "Keratin Spa", "Head Massage"],
             "rating": 4.9,
             "working_days": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"]
         },
         {
             "id": "B2",
-            "name": "Rajesh Kumar (Chair 2)",
-            "title": "Grooming & Fade Specialist",
-            "experience_years": 4,
-            "specialties": ["Hair Cut", "Gaming Shave", "D-Tan Facial", "Head Massage"],
+            "name": "Station 2",
+            "title": "Station 2 Stylist",
+            "experience_years": 5,
+            "specialties": ["Hair Cut", "Gaming Shave", "D-Tan Facial", "Head Massage", "Hair Colour"],
             "rating": 4.8,
             "working_days": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"]
         }
@@ -188,7 +188,7 @@ def init_db():
                   json.dumps(b["working_days"])))
         else:
             # Upgrade legacy placeholder names if needed
-            if "Staff" in existing_b["name"] or existing_b["name"] != b["name"]:
+            if "Staff" in existing_b["name"] or "Vikram" in existing_b["name"] or "Rajesh" in existing_b["name"] or existing_b["name"] != b["name"]:
                 cursor.execute("UPDATE barbers SET name = ?, title = ? WHERE id = ?", (b["name"], b["title"], b["id"]))
 
     conn.commit()
@@ -267,9 +267,9 @@ def get_barber_by_name_or_id(identifier=None):
     id_str = str(identifier).strip().lower() if identifier else ""
     if not identifier or id_str in ["default", "any", "none", "auto"]:
         cursor.execute("SELECT * FROM barbers ORDER BY id ASC LIMIT 1")
-    elif "staff" in id_str or "razor" in id_str or id_str in ["b1", "chair 1", "chair1"]:
+    elif "staff" in id_str or "razor" in id_str or id_str in ["b1", "station 1", "station1", "chair 1", "chair1"]:
         cursor.execute("SELECT * FROM barbers WHERE id = 'B1' LIMIT 1")
-    elif id_str in ["b2", "chair 2", "chair2"]:
+    elif id_str in ["b2", "station 2", "station2", "chair 2", "chair2"]:
         cursor.execute("SELECT * FROM barbers WHERE id = 'B2' LIMIT 1")
     else:
         cursor.execute("""

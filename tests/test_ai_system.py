@@ -92,17 +92,32 @@ def test_conflict_free_booking():
     assert "already booked" in msg2.lower()
     assert app_id2 is None
 
+    # Clean up test rows
+    from database.db import get_connection
+    conn = get_connection()
+    conn.execute("DELETE FROM appointments WHERE id IN (?, ?)", (app_id1, app_id2 or 0))
+    conn.commit()
+    conn.close()
+
 
 def test_cancellation_flow():
     """Verifies booked appointments can be cancelled by phone number."""
     test_phone = "9876512345"
     # Book first
-    book_appointment("Cancel Test", test_phone, "Hair Cut", "Razors-n-scissors Staff", "2026-12-26", "14:00")
+    ok, _, app_id = book_appointment("Cancel Test", test_phone, "Hair Cut", "Razors-n-scissors Staff", "2026-12-26", "14:00")
 
     # Cancel
     success, msg = cancel_appointment_by_phone(test_phone)
     assert success is True
     assert "successfully cancelled" in msg.lower()
+
+    # Clean up test row
+    if app_id:
+        from database.db import get_connection
+        conn = get_connection()
+        conn.execute("DELETE FROM appointments WHERE id = ?", (app_id,))
+        conn.commit()
+        conn.close()
 
 
 def test_complaint_registration():
@@ -114,6 +129,13 @@ def test_complaint_registration():
     assert len(matching) == 1
     assert matching[0]["status"] == "OPEN"
 
+    # Clean up test row
+    from database.db import get_connection
+    conn = get_connection()
+    conn.execute("DELETE FROM complaints WHERE id = ?", (cid,))
+    conn.commit()
+    conn.close()
+
 
 def test_human_handover_queue():
     """Verifies human escalation requests enter the queue."""
@@ -123,6 +145,13 @@ def test_human_handover_queue():
     matching = [h for h in queue if h["id"] == hid]
     assert len(matching) == 1
     assert matching[0]["status"] == "PENDING"
+
+    # Clean up test row
+    from database.db import get_connection
+    conn = get_connection()
+    conn.execute("DELETE FROM handover_queue WHERE id = ?", (hid,))
+    conn.commit()
+    conn.close()
 
 
 def test_approach_1_fsm_rule_detection():

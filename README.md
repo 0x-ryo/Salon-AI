@@ -134,6 +134,83 @@ If an inquiry requires personal attention or the customer expresses dissatisfact
 
 ---
 
+## 💈 Pulse Clinic Front-Desk Reception Portal & Station Operations
+
+The salon's front-desk interface is designed with a high-end, clean clinical reception workflow inspired by **Pulse Clinic Front Desk**:
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ 💈 Razors-n-scissors · Front Desk Reception   [🟢 Salon Open · 2 Stations Active] [● Cloud Sync] │
+├──────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ 🔬 INT428 Academic AI Lab & Model Benchmark                     [Open AI Benchmark Lab 🔬 📊]   │
+├──────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ ➕ Quick Walk-In Booking     │ 📅 Shop Closed / Holiday Manager │ 👥 Station Operations & Rosters│
+├──────────────────────────────┼──────────────────────────────────┼────────────────────────────────┤
+│ [Today: 18 Appts]            │ [In-Chair: 1 Client]             │ [Completed: 14] [₹1,850 Rev]   │
+├──────────────────────────────┴──────────────────────────────────┴────────────────────────────────┤
+│ 🪑 Station 1: IN-SERVICE NOW (Suman - Hair Cut)     │ 🪑 Station 2: READY / AVAILABLE           │
+│    [Complete Service & Mark Paid ✅]                │    Next: Rahul (16:30) [Seat Client ▶️]   │
+├─────────────────────────────────────────────────────┴────────────────────────────────────────────┤
+│ 📋 Customer Appointment Queue & Counter Dispatch (Filters: Station 1 / Station 2 / All Dates)    │
+│ 🚨 Staff Handover Requests (0 Pending)              │ ⚠️ Customer Feedback Desk (0 Open)         │
+└──────────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 1. Dual-Station Allocation (Station 1 & Station 2)
+* **Zero Barber Personal Names:** In accordance with salon management practices, stylists operate under designated stations (**Station 1** and **Station 2**). This preserves stylist privacy and enables smooth shift rotations without customer confusion.
+* **Live In-Chair Monitors:** The dashboard displays real-time occupancy for both stations, displaying current client name, phone number, service duration, scheduled end time, and one-click counter completion.
+
+### 2. Dynamic Daily Capacity (1 vs 2 Concurrent Bookings)
+* **Full Attendance (Both Active):** When both Station 1 and Station 2 are marked on duty, each 30-minute booking slot accepts up to **2 concurrent appointments**.
+* **Solo Attendance (1 Active):** If one stylist is off or on leave, the system automatically constrains capacity to **1 booking per slot**, preventing queue overbooking.
+* **Full Inactive (Both Off):** All appointment slots are automatically suspended.
+
+### 3. Salon Closure & Holiday Management
+* Front-desk managers can instantly mark the salon as **Closed for Today** or schedule **Future Closed Dates / Holidays** (e.g., campus maintenance, festival closures).
+* The AI Bot reads this status in real-time, immediately refusing new appointments for those dates while guiding clients to next available working days.
+
+### 4. Zero Screen Flickering & Stable Counter Display
+* **Anti-Flicker Architecture:** The full-page automatic refresh loop (`st.rerun()`) is disabled by default, preventing the entire DOM and the Staff Handover alert box from blinking or flashing.
+* **On-Demand Counter Sync:** Receptionists use the prominent `🔄 Refresh Counter Data` button for instant, zero-flicker live sync.
+* **Gentle Auto-Refresh Option:** When background polling is toggled on, it runs on a calm 30-second interval rather than an aggressive 5-second loop.
+
+---
+
+## 🔬 Finding & Navigating the INT428 Academic AI Lab
+
+The academic evaluation suite is permanently integrated and easily accessible through two prominent discovery paths:
+
+1. **Top Reception Callout Banner:** Right below the front-desk header on the main dashboard, an interactive callout banner provides a direct one-click button:  
+   👉 **`Open AI Benchmark Lab 🔬`**
+2. **Streamlit Multi-Page Sidebar:** Located in the left navigation sidebar under `pages/1_🔬_AI_Evaluation_&_Benchmarks.py`.
+
+### What's Inside the AI Lab:
+* **Real-Time Confusion Matrix:** Live classification performance comparing Approach 1 (Rules/FSM), Approach 2 (MiniLM Semantic Embeddings), and the Proposed Hybrid Architecture.
+* **Empirical Metric Radar:** Side-by-side comparison of Precision, Recall, F1-Score, and Latency (ms).
+* **Interactive Cosine Similarity Explorer:** Adjustable confidence threshold sliders ($\tau \in [0.5, 0.9]$) with live semantic distance visualizations.
+* **Transparent XAI Audit Trail:** Step-by-step diagnostic traces showing regex rule matches, embedding similarity scores, and fallback decisions.
+
+---
+
+## 💾 Permanent Data Persistence Guarantee
+
+A common operational concern for business owners is data permanence. In this platform, **100% of salon data is stored permanently**:
+
+| Data Category | Stored Details | Storage Engine | Durability Guarantee |
+| :--- | :--- | :--- | :--- |
+| **Appointments** | Customer Name, Phone, Service, Station (1 or 2), Date, Slot, Price, Status (`BOOKED`, `IN_SERVICE`, `COMPLETED`, `CANCELLED`) | SQLite WAL Cache + Cloud Sync | Permanent · Survives restarts |
+| **Grievances & Complaints** | Client Name, Phone, Issue Description, Severity Level, Resolution Notes, Status (`OPEN`, `RESOLVED`) | SQLite Relational DB | Permanent · Zero data loss |
+| **Staff Handovers** | Phone Number, Customer Query Context, Escalation Reason, Status (`PENDING`, `HANDLED`), Timestamps | SQLite Relational DB | Permanent · Counter-trackable |
+| **Salon Holidays** | Closure Dates (`YYYY-MM-DD`), Reason for Closure, Created Timestamp | SQLite Relational DB | Permanent · Active calendar |
+| **Station Rosters** | Station ID (`B1`/`B2`), Active Status ($1/0$), Date String | SQLite Relational DB | Permanent · Dynamic capacity |
+| **Conversation Logs** | Session ID, User Input, Bot Response, Detected Intent, Confidence, Engine Used, Latency | SQLite Relational DB | Permanent · Audit compliant |
+
+* **SQLite Write-Ahead Logging (WAL Mode):** Configured with `PRAGMA journal_mode=WAL` and `PRAGMA busy_timeout=5000` for immediate atomic commits (ACID compliant) and non-blocking concurrent reads.
+* **Render Cloud PostgreSQL:** Cloud database preserving WhatsApp Web multi-device session credentials and cloud state 24/7.
+* **Purged Demo Data:** All synthetic test rows (`Demo Customer`, `Unhappy User`, test bookings) have been completely purged, ensuring a clean production state.
+
+---
+
 ## 🛠️ Technology Stack
 
 * **Backend & Cloud Engine:** Python 3.12, FastAPI, Uvicorn, Render Cloud Web Service.
@@ -179,20 +256,23 @@ Navigate to [http://localhost:8000/pair](http://localhost:8000/pair) to view the
 ```
 Salon-AI/
 ├── app/
-│   ├── app.py                 # Pulse Clinic Front-Desk Reception Portal (Live Operations)
+│   ├── app.py                 # Pulse Clinic Front-Desk Reception Portal (Live Counter Operations)
 │   ├── pages/
 │   │   └── 1_🔬_AI_Evaluation_&_Benchmarks.py # Dedicated Academic Evaluation Lab (INT428)
 │   ├── whatsapp_bot.py        # 24/7 Cloud Gateway (Neonize + FastAPI + /pair)
 │   ├── salon_config.py        # Enterprise configurations (Razors-n-scissors BH-5)
 │   └── config.py              # Application settings & environment loader
+├── pages/
+│   └── 1_🔬_AI_Evaluation_&_Benchmarks.py     # Root-level multi-page entrypoint for Streamlit Cloud
+├── streamlit_app.py           # Root entrypoint redirecting to Pulse Clinic front-desk
 ├── engine/
 │   ├── guardrails.py          # DPDP Act PII Redaction & Medical Safety Filter
 │   ├── rule_engine.py         # Approach 1: Regex & FSM Slot-Filling Dialog Tracker
 │   ├── semantic_engine.py     # Approach 2: MiniLM Semantic Similarity & Retrieval
 │   └── hybrid_agent.py        # Hybrid Orchestrator & XAI Trace Generator
 ├── database/
-│   ├── db.py                  # Relational Schema CRUD, Analytics & Interval Conflict Checks
-│   └── salon.db               # SQLite Relational Database Cache
+│   ├── db.py                  # Relational Schema CRUD, Station Rosters & Interval Capacity Checks
+│   └── salon.db               # SQLite Relational Database Cache (WAL Mode)
 ├── data/
 │   ├── knowledge_base.json    # Salon Services, Pricing, & Policies Catalog
 │   ├── owner_interview.json   # Authentic Fieldwork Workflow Analysis
@@ -204,8 +284,8 @@ Salon-AI/
 │   ├── test_whatsapp.py       # Integration tests for WhatsApp bot & endpoints
 │   └── test_ai_system.py      # Core agent & safety guardrail tests
 ├── docs/
-│   ├── DEPLOYMENT.md              # 24/7 Cloud deployment & operations guide
-│   └── OWNER_EVALUATION_FORM.md   # Salon feedback & operational assessment
+│   ├── DEPLOYMENT.md          # 24/7 Cloud deployment & operations guide
+│   └── OWNER_EVALUATION_FORM.md # Salon feedback & operational assessment
 ├── render.yaml                # Render Cloud 24/7 deployment specification
 ├── requirements.txt           # Python dependencies
 └── README.md                  # Comprehensive system documentation

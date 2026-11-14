@@ -328,8 +328,8 @@ with st.sidebar:
     st.divider()
 
     st.markdown("### ⚡ Live Counter Sync")
-    auto_refresh = st.toggle("Real-Time Refresh (5s)", value=True)
-    if st.button("🔄 Force Sync Now", use_container_width=True):
+    auto_refresh = st.toggle("Auto-Refresh (30s)", value=False, help="Enable automatic background refresh every 30 seconds. Disabled by default to prevent screen flicker.")
+    if st.button("🔄 Refresh Counter Data", use_container_width=True):
         st.session_state.last_sync = datetime.now().strftime("%H:%M:%S")
         st.rerun()
 
@@ -367,12 +367,21 @@ st.markdown(f"""
             <p class="reception-subtitle">Campus Grooming Hub · {ADDRESS} · {datetime.now().strftime('%A, %B %d, %Y')}</p>
         </div>
         <div style="display:flex; align-items:center; gap:10px;">
-            {'<span class="pill-closed">🔴 Salon Closed Today</span>' if is_closed_today else f'<span class="pill-open">🟢 Salon Open · {active_barber_count} Chair(s) Active</span>'}
+            {'<span class="pill-closed">🔴 Salon Closed Today</span>' if is_closed_today else f'<span class="pill-open">🟢 Salon Open · {active_barber_count} Station(s) Active</span>'}
             <span class="pill-sync">● Cloud Sync Active</span>
         </div>
     </div>
 </div>
 """, unsafe_allow_html=True)
+
+# ----------------- ACADEMIC AI LAB BANNER & DISCOVERY -----------------
+with st.container(border=True):
+    col_lab_text, col_lab_btn = st.columns([3, 1])
+    with col_lab_text:
+        st.markdown("🔬 **INT428 Academic AI Lab & Comparative Benchmark**")
+        st.caption("Benchmark Approach 1 (Rule-Based FSM) vs Approach 2 (Semantic Embeddings) vs Proposed Hybrid Architecture with real-time confusion matrices and latency traces.")
+    with col_lab_btn:
+        st.page_link("pages/1_🔬_AI_Evaluation_&_Benchmarks.py", label="Open AI Benchmark Lab 🔬", icon="📊")
 
 
 # ----------------- 2. QUICK RECEPTION ACTION EXPANDERS -----------------
@@ -388,11 +397,13 @@ with quick_col1:
         svc_options = {f"{s['id']} - {s['name']} (₹{int(s['price_inr'])})": s['id'] for s in all_services}
         w_svc = st.selectbox("Select Service:", list(svc_options.keys()), key="w_svc")
 
-        # Station chair choice
-        barber_choices = {"Auto-Assign First Available Chair": "default"}
-        for b in get_all_barbers():
-            barber_choices[b["name"]] = b["id"]
-        w_chair = st.selectbox("Assign Station / Stylist:", list(barber_choices.keys()), key="w_chair")
+        # Station choice
+        barber_choices = {
+            "Auto-Assign First Available Station": "default",
+            "Station 1": "B1",
+            "Station 2": "B2"
+        }
+        w_chair = st.selectbox("Assign Station:", list(barber_choices.keys()), key="w_chair")
 
         w_time = st.text_input("Time Slot (HH:MM):", value=datetime.now().strftime("%H:%M"), key="w_time")
 
@@ -453,8 +464,8 @@ with quick_col2:
                     st.rerun()
 
 with quick_col3:
-    with st.expander("👥 **Staff Roster & Capacity (Chairs 1 & 2)**", expanded=False):
-        st.markdown("##### Daily Stylist Attendance")
+    with st.expander("👥 **Station Operations & Daily Capacity (Station 1 & Station 2)**", expanded=False):
+        st.markdown("##### Station Availability")
         st.caption("Controls concurrent booking capacity (1 vs 2 slots):")
 
         all_b = get_all_barbers()
@@ -462,30 +473,30 @@ with quick_col3:
 
         for b in all_b:
             b_is_active = b["id"] in active_ids
-            b_label = f"**{b['name']}**"
-            status_text = "On Duty ✅" if b_is_active else "On Leave 🏖️"
+            b_station_label = "Station 1" if "1" in str(b["id"]) else "Station 2"
+            status_text = "Active & On Duty ✅" if b_is_active else "Inactive / Off Duty 🏖️"
 
             c_info, c_btn = st.columns([3, 2])
-            c_info.markdown(f"{b_label}<br><span style='font-size:0.8rem; color:#94A3B8;'>{status_text} · {b['title']}</span>", unsafe_allow_html=True)
+            c_info.markdown(f"**🪑 {b_station_label}**<br><span style='font-size:0.8rem; color:#94A3B8;'>{status_text}</span>", unsafe_allow_html=True)
             
-            toggle_label = "Set Leave" if b_is_active else "Set Duty"
+            toggle_label = "Set Inactive" if b_is_active else "Set Active"
             if c_btn.button(toggle_label, key=f"rost_{b['id']}"):
                 send_action_update("roster", {
                     "date_str": today_str,
                     "barber_id": b["id"],
                     "is_active": not b_is_active
                 })
-                st.toast(f"Updated attendance for {b['name']}!")
+                st.toast(f"Updated attendance for {b_station_label}!")
                 time.sleep(0.5)
                 st.rerun()
 
         st.divider()
         if active_barber_count == 2:
-            st.success("🟢 **Full Capacity:** Both Barbers Active (2 concurrent slots).")
+            st.success("🟢 **Full Capacity:** Both Stations Active (2 concurrent slots).")
         elif active_barber_count == 1:
-            st.warning("🟡 **Half Capacity:** 1 Barber Active (1 slot per time interval).")
+            st.warning("🟡 **Half Capacity:** 1 Station Active (1 slot per time interval).")
         else:
-            st.error("🔴 **Zero Capacity:** Both Barbers on leave.")
+            st.error("🔴 **Zero Capacity:** Both Stations inactive.")
 
 
 st.divider()
@@ -526,22 +537,22 @@ st.divider()
 
 
 # ----------------- 4. DUAL-CHAIR STATION STATUS MONITOR -----------------
-st.subheader("💈 Live Salon Chair Stations (BH-5)")
+st.subheader("💈 Live Salon Stations (BH-5)")
 
 st_col1, st_col2 = st.columns(2)
 
-# Chair 1
-chair1_b = next((b for b in all_b if "B1" in b["id"] or "Chair 1" in b["name"]), all_b[0] if all_b else None)
+# Station 1
+chair1_b = next((b for b in all_b if "B1" in b["id"] or "1" in b["name"]), all_b[0] if all_b else None)
 chair1_active = chair1_b and chair1_b["id"] in active_ids if chair1_b else False
 chair1_current = [a for a in today_apps if a.get("barber_id") == (chair1_b["id"] if chair1_b else "") and a.get("status") == "IN_SERVICE"]
 chair1_next = [a for a in today_apps if a.get("barber_id") == (chair1_b["id"] if chair1_b else "") and a.get("status") == "BOOKED"]
 
 with st_col1:
     with st.container(border=True):
-        st.markdown(f"#### 🪑 Station 1: {chair1_b['name'] if chair1_b else 'Chair 1'}")
+        st.markdown("#### 🪑 Station 1")
         if not chair1_active:
-            st.markdown('<span class="badge-cancelled">ON LEAVE / INACTIVE TODAY</span>', unsafe_allow_html=True)
-            st.caption("No appointments assigned to Chair 1 today.")
+            st.markdown('<span class="badge-cancelled">INACTIVE TODAY</span>', unsafe_allow_html=True)
+            st.caption("No appointments assigned to Station 1 today.")
         elif chair1_current:
             cur = chair1_current[0]
             st.markdown('<span class="badge-inservice">IN-SERVICE NOW</span>', unsafe_allow_html=True)
@@ -550,7 +561,7 @@ with st_col1:
             st.caption(f"Started at: {cur['start_time']} | Scheduled End: {cur.get('end_time', 'N/A')}")
             if st.button("Complete Service & Mark Paid ✅", key=f"ch1_comp_{cur['id']}", use_container_width=True):
                 send_action_update("status", {"id": cur['id'], "status": "COMPLETED"})
-                st.toast(f"Chair 1 service completed for {cur['customer_name']}!")
+                st.toast(f"Station 1 service completed for {cur['customer_name']}!")
                 st.rerun()
         else:
             st.markdown('<span class="badge-completed">READY / AVAILABLE</span>', unsafe_allow_html=True)
@@ -562,18 +573,18 @@ with st_col1:
                     send_action_update("status", {"id": nxt['id'], "status": "IN_SERVICE"})
                     st.rerun()
 
-# Chair 2
-chair2_b = next((b for b in all_b if "B2" in b["id"] or "Chair 2" in b["name"]), all_b[1] if len(all_b) > 1 else None)
+# Station 2
+chair2_b = next((b for b in all_b if "B2" in b["id"] or "2" in b["name"]), all_b[1] if len(all_b) > 1 else None)
 chair2_active = chair2_b and chair2_b["id"] in active_ids if chair2_b else False
 chair2_current = [a for a in today_apps if a.get("barber_id") == (chair2_b["id"] if chair2_b else "") and a.get("status") == "IN_SERVICE"]
 chair2_next = [a for a in today_apps if a.get("barber_id") == (chair2_b["id"] if chair2_b else "") and a.get("status") == "BOOKED"]
 
 with st_col2:
     with st.container(border=True):
-        st.markdown(f"#### 🪑 Station 2: {chair2_b['name'] if chair2_b else 'Chair 2'}")
+        st.markdown("#### 🪑 Station 2")
         if not chair2_active:
-            st.markdown('<span class="badge-cancelled">ON LEAVE / INACTIVE TODAY</span>', unsafe_allow_html=True)
-            st.caption("No appointments assigned to Chair 2 today.")
+            st.markdown('<span class="badge-cancelled">INACTIVE TODAY</span>', unsafe_allow_html=True)
+            st.caption("No appointments assigned to Station 2 today.")
         elif chair2_current:
             cur = chair2_current[0]
             st.markdown('<span class="badge-inservice">IN-SERVICE NOW</span>', unsafe_allow_html=True)
@@ -582,7 +593,7 @@ with st_col2:
             st.caption(f"Started at: {cur['start_time']} | Scheduled End: {cur.get('end_time', 'N/A')}")
             if st.button("Complete Service & Mark Paid ✅", key=f"ch2_comp_{cur['id']}", use_container_width=True):
                 send_action_update("status", {"id": cur['id'], "status": "COMPLETED"})
-                st.toast(f"Chair 2 service completed for {cur['customer_name']}!")
+                st.toast(f"Station 2 service completed for {cur['customer_name']}!")
                 st.rerun()
         else:
             st.markdown('<span class="badge-completed">READY / AVAILABLE</span>', unsafe_allow_html=True)
@@ -608,7 +619,7 @@ with f_col2:
 with f_col3:
     search_q = st.text_input("🔍 Search Client Name or Phone:", placeholder="e.g. Suman, 9876543210")
 with f_col4:
-    station_filter = st.selectbox("Filter Station:", ["All Chairs", "Chair 1 Only", "Chair 2 Only"], index=0)
+    station_filter = st.selectbox("Filter Station:", ["All Stations", "Station 1 Only", "Station 2 Only"], index=0)
 
 # Filter Logic
 display_apps = all_apps
@@ -627,10 +638,10 @@ elif status_filter != "All":
     display_apps = [a for a in display_apps if a.get("status") == status_filter]
 
 # 3. Station
-if station_filter == "Chair 1 Only":
-    display_apps = [a for a in display_apps if "1" in str(a.get("barber_id", "")) or "Chair 1" in str(a.get("barber_name", ""))]
-elif station_filter == "Chair 2 Only":
-    display_apps = [a for a in display_apps if "2" in str(a.get("barber_id", "")) or "Chair 2" in str(a.get("barber_name", ""))]
+if station_filter == "Station 1 Only":
+    display_apps = [a for a in display_apps if "1" in str(a.get("barber_id", "")) or "1" in str(a.get("barber_name", ""))]
+elif station_filter == "Station 2 Only":
+    display_apps = [a for a in display_apps if "2" in str(a.get("barber_id", "")) or "2" in str(a.get("barber_name", ""))]
 
 # 4. Search
 if search_q.strip():
@@ -658,8 +669,9 @@ if display_apps:
 
             with c_service:
                 st.markdown(f"✂️ **{app['service_name']}**")
-                b_name_disp = app.get('barber_name', 'Razors-n-scissors Staff')
-                st.caption(f"🪑 {b_name_disp}")
+                b_raw = str(app.get('barber_name', ''))
+                b_disp = "Station 2" if ("2" in b_raw or "2" in str(app.get('barber_id', ''))) else "Station 1"
+                st.caption(f"🪑 {b_disp}")
 
             with c_slot:
                 st.markdown(f"📅 **{app['appointment_date']}**")
@@ -718,7 +730,7 @@ with esc_col1:
                     send_action_update("handover", {"id": ho['id']})
                     st.rerun()
     else:
-        st.caption("No pending staff handover requests. AI Bot handling 100% of chats.")
+        st.success("✅ **Queue Clear:** No pending staff handover requests. AI Bot handling 100% of campus chats.")
 
 with esc_col2:
     st.subheader("⚠️ Customer Feedback & Grievances")
@@ -733,7 +745,7 @@ with esc_col2:
                     send_action_update("complaint", {"id": comp['id'], "notes": c_note or "Resolved at reception"})
                     st.rerun()
     else:
-        st.caption("No unresolved complaints! Customer satisfaction rating is 100%.")
+        st.success("✅ **Zero Grievances:** All customer tickets resolved. Customer satisfaction is 100%.")
 
 st.divider()
 
@@ -754,7 +766,7 @@ with st.expander("💈 **View Official Salon Rate Card (16 Services [S1-S16])**"
         ]
         st.dataframe(svc_display, use_container_width=True)
 
-# Auto-refresh loop
+# Auto-refresh loop (only runs when explicitly toggled on)
 if auto_refresh:
-    time.sleep(5)
+    time.sleep(30)
     st.rerun()
