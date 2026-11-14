@@ -606,8 +606,44 @@ class RuleBasedSalonChatbot:
 
         new_slots = self.extract_entities(user_message)
 
+        # Fresh booking initiation: if user explicitly says "can i book an appointment", "book appointment", etc.
+        # without specifying a service in this message, ALWAYS reset state and show the service menu fresh!
+        if intent == "book_appointment" and not new_slots.get("service"):
+            self.reset_state()
+            self.state = "AWAITING_SERVICE"
+            response_text = (
+                "Sure! Which service would you like to book?\n\n"
+                "1️⃣ *Hair Cut* — ₹100\n"
+                "2️⃣ *Beard Trim / Shave* — ₹50\n"
+                "3️⃣ *Cut + Beard Combo* — ₹140\n"
+                "4️⃣ *Head Wash* — ₹50\n"
+                "5️⃣ *Keratin Spa* — ₹400\n"
+                "6️⃣ *D-Tan Cleaner* — ₹300\n"
+                "7️⃣ *Hair Colour* — ₹450\n\n"
+                "───────────────\n"
+                "8️⃣ 📋 *Full Price List (All Services [S1-S16])*\n\n"
+                "💡 _Reply with a number (1-7), code (S1-S16), or service name!_"
+            )
+            trace["state_after"] = self.state
+            trace["slots_after"] = dict(self.slots)
+            return {
+                "response": response_text,
+                "detected_intent": intent,
+                "confidence": conf,
+                "trace": trace
+            }
+
+        # If user initiates a new booking AND specifies a service in this message (e.g. "book haircut tomorrow"):
+        if intent == "book_appointment" and new_slots.get("service") and self.state == "IDLE":
+            self.reset_state()
+            self.slots["service"] = new_slots["service"]
+            self.slots["date"] = new_slots.get("date")
+            self.slots["time_slot"] = new_slots.get("time_slot")
+            self.slots["customer_name"] = new_slots.get("customer_name")
+            self.slots["phone"] = new_slots.get("phone")
+
         # Service switching support: if user in slot filling chooses a new service, update and restart flow
-        if new_slots.get("service") and self.state.startswith("AWAITING_") and self.state != "AWAITING_SERVICE":
+        elif new_slots.get("service") and self.state.startswith("AWAITING_") and self.state != "AWAITING_SERVICE":
             if new_slots["service"] != self.slots.get("service"):
                 self.slots["service"] = new_slots["service"]
                 self.slots["date"] = None
@@ -733,6 +769,7 @@ class RuleBasedSalonChatbot:
             response_text = "🚶 Walk-ins are always welcome! However, appointments booked here are given priority so you skip the queue."
 
         elif intent in ["greeting", "show_menu"]:
+            self.reset_state()
             response_text = get_master_menu()
 
         elif intent == "farewell":

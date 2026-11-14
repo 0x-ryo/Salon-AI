@@ -55,12 +55,20 @@ def startup_event():
 
 # Per-user conversational agent session map: user_key -> HybridSalonAgent
 _user_sessions: dict[str, HybridSalonAgent] = {}
+_user_last_active: dict[str, float] = {}
 
 
 def get_agent_for_user(user_id: str) -> HybridSalonAgent:
     """Retrieves or creates a dedicated hybrid agent session for a WhatsApp sender."""
-    if user_id not in _user_sessions:
+    now = time.time()
+    if user_id in _user_sessions:
+        # If user has been idle for more than 15 minutes, reset to clean state
+        last_time = _user_last_active.get(user_id, 0)
+        if now - last_time > 900:
+            _user_sessions[user_id].reset_session()
+    else:
         _user_sessions[user_id] = HybridSalonAgent()
+    _user_last_active[user_id] = now
     return _user_sessions[user_id]
 
 
