@@ -179,7 +179,8 @@ Navigate to [http://localhost:8000/pair](http://localhost:8000/pair) to view the
 ```
 Salon-AI/
 ├── app/
-│   ├── app.py                 # Streamlit Cloud Operations Portal (5s Live Sync)
+│   ├── app.py                 # Pulse Clinic Style Front-Desk Operations Portal (Live Queue & Capacity)
+│   ├── academic_lab.py        # INT428 Academic Benchmark Lab & XAI Decision Trace Inspector
 │   ├── whatsapp_bot.py        # 24/7 Cloud Gateway (Neonize + FastAPI + /pair)
 │   ├── salon_config.py        # Enterprise configurations (Razors-n-scissors BH-5)
 │   └── config.py              # Application settings & environment loader
