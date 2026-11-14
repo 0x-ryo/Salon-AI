@@ -321,12 +321,13 @@ async def api_book_appointment(request: Request):
 
 @app.post("/api/action/status")
 async def api_update_status(request: Request):
-    """Updates appointment status (e.g. COMPLETED, CANCELLED, BOOKED)."""
+    """Updates appointment status (e.g. COMPLETED, CANCELLED, BOOKED) and optional station seating."""
     data = await request.json()
     app_id = int(data.get("id", 0))
     new_status = data.get("status", "COMPLETED")
-    success = update_appointment_status(app_id, new_status)
-    return {"success": success, "id": app_id, "status": new_status}
+    station_id = data.get("station_id")
+    success = update_appointment_status(app_id, new_status, station_id)
+    return {"success": success, "id": app_id, "status": new_status, "station_id": station_id}
 
 
 @app.post("/api/action/handover")

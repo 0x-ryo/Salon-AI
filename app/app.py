@@ -286,7 +286,7 @@ def send_action_update(action_type: str, payload: dict = None):
 
     # Apply locally as well for immediate consistency
     if action_type == "status":
-        update_appointment_status(payload.get("id", 0), payload.get("status", "COMPLETED"))
+        update_appointment_status(payload.get("id", 0), payload.get("status", "COMPLETED"), payload.get("station_id"))
     elif action_type == "holiday":
         if payload.get("is_closed"):
             set_salon_closed(payload.get("date_str"), payload.get("reason", "Shop Holiday"))
@@ -569,8 +569,8 @@ with st_col1:
             if chair1_next:
                 nxt = chair1_next[0]
                 st.markdown(f"**Next:** {nxt['customer_name']} at **{nxt['start_time']}** ({nxt['service_name']})")
-                if st.button("Seat Next Client ▶️", key=f"ch1_seat_{nxt['id']}", use_container_width=True):
-                    send_action_update("status", {"id": nxt['id'], "status": "IN_SERVICE"})
+                if st.button("Seat at Station 1 ▶️", key=f"ch1_seat_{nxt['id']}", use_container_width=True, type="primary"):
+                    send_action_update("status", {"id": nxt['id'], "status": "IN_SERVICE", "station_id": "B1"})
                     st.rerun()
 
 # Station 2
@@ -597,12 +597,13 @@ with st_col2:
                 st.rerun()
         else:
             st.markdown('<span class="badge-completed">READY / AVAILABLE</span>', unsafe_allow_html=True)
+            st_2_candidates = chair2_next if chair2_next else chair1_next
             st.caption(f"Upcoming queue today: {len(chair2_next)} client(s)")
-            if chair2_next:
-                nxt = chair2_next[0]
+            if st_2_candidates:
+                nxt = st_2_candidates[0]
                 st.markdown(f"**Next:** {nxt['customer_name']} at **{nxt['start_time']}** ({nxt['service_name']})")
-                if st.button("Seat Next Client ▶️", key=f"ch2_seat_{nxt['id']}", use_container_width=True):
-                    send_action_update("status", {"id": nxt['id'], "status": "IN_SERVICE"})
+                if st.button("Seat at Station 2 ▶️", key=f"ch2_seat_{nxt['id']}", use_container_width=True, type="primary"):
+                    send_action_update("status", {"id": nxt['id'], "status": "IN_SERVICE", "station_id": "B2"})
                     st.rerun()
 
 st.divider()
@@ -693,13 +694,17 @@ if display_apps:
 
             with c_act:
                 if st_val == "BOOKED":
-                    btn_a1, btn_a2 = st.columns(2)
+                    btn_a1, btn_a2, btn_a3 = st.columns([1.2, 1.2, 1])
                     with btn_a1:
-                        if st.button("Seat ▶️", key=f"seat_{app['id']}", use_container_width=True):
-                            send_action_update("status", {"id": app['id'], "status": "IN_SERVICE"})
+                        if st.button("🪑 Stn 1", key=f"seat1_{app['id']}", use_container_width=True, help="Seat client in Station 1"):
+                            send_action_update("status", {"id": app['id'], "status": "IN_SERVICE", "station_id": "B1"})
                             st.rerun()
                     with btn_a2:
-                        if st.button("Cancel ❌", key=f"cnl_{app['id']}", use_container_width=True):
+                        if st.button("🪑 Stn 2", key=f"seat2_{app['id']}", use_container_width=True, help="Seat client in Station 2"):
+                            send_action_update("status", {"id": app['id'], "status": "IN_SERVICE", "station_id": "B2"})
+                            st.rerun()
+                    with btn_a3:
+                        if st.button("❌", key=f"cnl_{app['id']}", use_container_width=True, help="Cancel booking"):
                             send_action_update("status", {"id": app['id'], "status": "CANCELLED"})
                             st.rerun()
                 elif st_val == "IN_SERVICE":

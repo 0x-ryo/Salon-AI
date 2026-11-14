@@ -560,24 +560,36 @@ def book_appointment(customer_name, phone, service_id, barber_id=None, date_str=
             return False, f"Sorry, {target_b['name']} is already booked / busy from {existing['start_time']} to {existing['end_time']} on {date_str}. Please choose another time slot.", None
         assigned_barber = target_b
     else:
-        # Auto-assign to first available active barber on duty
+        # Balanced assignment across all free stations on duty
+        free_stations = []
         for ab in active_barbers:
             cursor.execute("""
-            SELECT id, customer_name, start_time, end_time FROM appointments
+            SELECT id FROM appointments
             WHERE barber_id = ? 
               AND appointment_date = ? 
               AND status IN ('BOOKED', 'IN_SERVICE')
               AND start_time < ? 
               AND end_time > ?
             """, (ab["id"], date_str, end_time_str, time_str))
-            existing = cursor.fetchone()
-            if not existing:
-                assigned_barber = ab
-                break
+            if not cursor.fetchone():
+                free_stations.append(ab)
+
+        if free_stations:
+            # Sort by total non-cancelled bookings on that date (Load Balancing)
+            # This ensures Station 1 and Station 2 alternate evenly!
+            def get_station_daily_load(s):
+                cursor.execute("""
+                SELECT COUNT(*) FROM appointments
+                WHERE barber_id = ? AND appointment_date = ? AND status != 'CANCELLED'
+                """, (s["id"], date_str))
+                return cursor.fetchone()[0]
+
+            free_stations.sort(key=get_station_daily_load)
+            assigned_barber = free_stations[0]
 
         if not assigned_barber:
             conn.close()
-            cap_str = f"All {len(active_barbers)} chairs" if len(active_barbers) > 1 else "The chair"
+            cap_str = f"All {len(active_barbers)} stations" if len(active_barbers) > 1 else "The station"
             return False, f"Sorry, {cap_str} on duty are fully booked from {time_str} to {end_time_str} on {date_str}. Please choose another time slot.", None
 
     cursor.execute("""
@@ -765,11 +777,16 @@ def get_chat_logs(limit=50):
     return [dict(r) for r in rows]
 
 
-def update_appointment_status(appointment_id: int, new_status: str) -> bool:
-    """Updates the status of an appointment (e.g. COMPLETED, CANCELLED, BOOKED)."""
+def update_appointment_status(appointment_id: int, new_status: str, station_id: str = None) -> bool:
+    """Updates the status of an appointment (e.g. IN_SERVICE, COMPLETED, CANCELLED) and optionally reassigns station."""
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("UPDATE appointments SET status = ? WHERE id = ?", (new_status.upper(), appointment_id))
+    if station_id:
+        stn_name = "Station 2" if "2" in str(station_id) else "Station 1"
+        b_id = "B2" if "2" in str(station_id) else "B1"
+        cursor.execute("UPDATE appointments SET status = ?, barber_id = ?, barber_name = ? WHERE id = ?", (new_status.upper(), b_id, stn_name, appointment_id))
+    else:
+        cursor.execute("UPDATE appointments SET status = ? WHERE id = ?", (new_status.upper(), appointment_id))
     rows_affected = cursor.rowcount
     conn.commit()
     conn.close()
